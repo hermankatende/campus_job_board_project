@@ -1,0 +1,7 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g opacity="0.2">
+<circle cx="24" cy="24" r="24" fill="#FFB2B2"/>
+</g>
+<line x1="22.5" y1="16" x2="22.5" y2="32" fill="#FFB2B2" stroke="#FF9228" stroke-width="1.5" stroke-miterlimit="3.999327" stroke-linecap="round"/>
+<line x1="32" y1="22.5" x2="16" y2="22.5" fill="#FFB2B2" stroke="#FF9228" stroke-width="1.5" stroke-miterlimit="3.999327" stroke-linecap="round"/>
+</svg>

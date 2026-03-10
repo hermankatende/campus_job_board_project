@@ -1,0 +1,3 @@
+[submodule "Website/project-website-template"]
+	path = Website/project-website-template
+	url = https://github.com/Hermankate/group7zrepo.git

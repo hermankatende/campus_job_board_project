@@ -1,0 +1,11 @@
+{
+  "name": "cloud-function",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "@google-cloud/pubsub": "^4.5.0",
+    "express": "^4.19.2",
+    "firebase-admin": "^12.2.0",
+    "firebase-functions": "^5.0.1"
+  }
+}

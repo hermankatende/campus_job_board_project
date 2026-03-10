@@ -1,3 +1,9 @@
 # campus_job_board_project
-A central platform where students looking for  job opportunities can look...a central hub where recruiters can look for potential candidates ...a central platform where lectureres with job opportunities get to pass on the information
+
+A central platform where:
+- **Students** can look for job opportunities
+- **Recruiters** can find potential candidates  
+- **Lecturers** can share job opportunities with students
+
+Built with Flutter for cross-platform support (Android, iOS, Web, macOS, Linux, Windows) and Firebase backend.
 

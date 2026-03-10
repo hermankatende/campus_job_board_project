@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "781590505905",
+    "project_id": "cjb-app",
+    "storage_bucket": "cjb-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:781590505905:android:8b6bd4a73d1e37cd67b590",
+        "android_client_info": {
+          "package_name": "com.example.cjb"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBkxK43JkoidDdPYvee_nrlJrc26Lh50k0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
