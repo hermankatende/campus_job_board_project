@@ -32,6 +32,26 @@ class _SignInPageState extends State<SignInPage> {
     });
   }
 
+  bool _needsOnboarding(UserProfile profile) {
+    if (profile.role.isEmpty) return true;
+
+    if (profile.isStudent) {
+      return profile.college.isEmpty ||
+          profile.program.isEmpty ||
+          profile.studentNumber.isEmpty;
+    }
+
+    if (profile.isRecruiter) {
+      return profile.companyName.isEmpty;
+    }
+
+    if (profile.isLecturer) {
+      return profile.department.isEmpty;
+    }
+
+    return false;
+  }
+
   Future<void> _login() async {
     final email = _emailController.text;
     final password = _passwordController.text;
@@ -40,7 +60,7 @@ class _SignInPageState extends State<SignInPage> {
 
       if (!mounted) return;
 
-      if (profile.role.isEmpty) {
+      if (_needsOnboarding(profile)) {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => RoleSelectionPage()),

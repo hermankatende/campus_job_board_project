@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.core.mail import send_mail
 from django.utils import timezone
 from rest_framework import generics, permissions
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -62,7 +64,38 @@ class UserOnboardingView(APIView):
             profile.email = email
 
         profile.save()
+
+        if profile.role == UserProfile.Role.LECTURER:
+            self._send_lecturer_verification_email(profile)
+
         return Response(UserProfileSerializer(profile).data)
+
+    def _send_lecturer_verification_email(self, profile: UserProfile) -> None:
+        hod_email = getattr(settings, "LECTURER_HOD_EMAIL", "").strip()
+        if not hod_email:
+            return
+
+        subject = "Lecturer Verification Request - Campus Job Board"
+        message = (
+            "A lecturer has registered on Campus Job Board and requires verification.\n\n"
+            f"Name: {profile.full_name}\n"
+            f"Email: {profile.email}\n"
+            f"Department: {profile.department}\n"
+            f"Phone: {profile.phone}\n\n"
+            "Please review and verify this lecturer from the admin dashboard."
+        )
+
+        try:
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[hod_email],
+                fail_silently=True,
+            )
+        except Exception:
+            # Do not block onboarding if email delivery fails.
+            pass
 
 
 class UserProfileListCreateView(generics.ListCreateAPIView):
