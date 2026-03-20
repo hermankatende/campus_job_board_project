@@ -1,7 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cjb/services/api_client.dart';
 
 class EmployeeSearchService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final _api = ApiClient.instance;
 
   Future<List<Map<String, dynamic>>> searchEmployees({
     String? name,
@@ -12,51 +12,53 @@ class EmployeeSearchService {
     String? ageRange,
   }) async {
     try {
-      final querySnapshot = await _firestore.collection('users').get();
-      final users = querySnapshot.docs
-          .map((doc) => doc.data()..['uid'] = doc.id) // Include user ID
-          .toList();
+      final params = <String>[];
 
-      final matchedUsers = <Map<String, dynamic>>[];
-
-      for (var user in users) {
-        bool matches = true;
-
-        final normalizedName = (user['name'] as String?)?.trim() ?? '';
-        final normalizedGender = (user['gender'] as String?)?.trim() ?? '';
-        final normalizedWorkingExperience =
-            (user['work_experience'] as String?)?.trim() ?? '';
-        final normalizedSkills = (user['skills'] as String?)?.trim() ?? '';
-        final normalizedAgeRange = (user['age_range'] as String?)?.trim() ?? '';
-
-        if (name != null && !normalizedName.contains(name.trim())) {
-          matches = false;
-        }
-
-        if (gender != null && !gender.contains(normalizedGender)) {
-          matches = false;
-        }
-
-        if (workingexperience != null &&
-            !normalizedWorkingExperience.contains(workingexperience.trim())) {
-          matches = false;
-        }
-
-        if (skills != null &&
-            !skills.any((skill) => normalizedSkills.contains(skill.trim()))) {
-          matches = false;
-        }
-
-        if (ageRange != null && normalizedAgeRange != ageRange.trim()) {
-          matches = false;
-        }
-
-        if (matches) {
-          matchedUsers.add(user);
+      if (name != null && name.trim().isNotEmpty) {
+        params.add('name=${Uri.encodeQueryComponent(name.trim())}');
+      }
+      if (location != null && location.trim().isNotEmpty) {
+        params.add('location=${Uri.encodeQueryComponent(location.trim())}');
+      }
+      if (gender != null && gender.isNotEmpty) {
+        params.add('gender=${Uri.encodeQueryComponent(gender.join(','))}');
+      }
+      if (workingexperience != null && workingexperience.trim().isNotEmpty) {
+        params.add(
+            'work_experience=${Uri.encodeQueryComponent(workingexperience.trim())}');
+      }
+      if (skills != null && skills.isNotEmpty) {
+        final nonEmpty = skills.where((s) => s.trim().isNotEmpty).toList();
+        if (nonEmpty.isNotEmpty) {
+          params.add('skills=${Uri.encodeQueryComponent(nonEmpty.join(','))}');
         }
       }
+      if (ageRange != null && ageRange.trim().isNotEmpty) {
+        params.add('age_range=${Uri.encodeQueryComponent(ageRange.trim())}');
+      }
 
-      return matchedUsers;
+      final qs = params.isEmpty ? '' : '?${params.join('&')}';
+      final data = await _api.get('/api/users/search/$qs');
+
+      if (data is! List) return [];
+
+      return data.map<Map<String, dynamic>>((e) {
+        final m = e as Map<String, dynamic>;
+        // Remap backend field names to the keys s.dart expects.
+        return {
+          'uid': m['firebase_uid'] ?? '',
+          'name': m['full_name'] ?? '',
+          'gender': m['gender'] ?? '',
+          'work_experience': m['work_experience'] ?? '',
+          'skills': m['skills'] ?? '',
+          'age_range': m['age_range'] ?? '',
+          'job_title': (m['job_preference'] as String?)?.isNotEmpty == true
+              ? m['job_preference']
+              : 'No job title',
+          'image_url': m['image_url'] ?? '',
+          'email': m['email'] ?? '',
+        };
+      }).toList();
     } catch (e) {
       print('Error during search: $e');
       return [];

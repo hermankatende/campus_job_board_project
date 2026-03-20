@@ -212,10 +212,10 @@ class _EmployeeSearchPageState extends State<EmployeeSearchPage> {
                 itemBuilder: (context, index) {
                   var profile = _results[index];
                   return ListTile(
-                    leading: profile['image_path'] != null
+                    leading: (profile['image_url'] as String?)?.isNotEmpty ==
+                            true
                         ? CircleAvatar(
-                            backgroundImage:
-                                NetworkImage(profile['image_path']),
+                            backgroundImage: NetworkImage(profile['image_url']),
                           )
                         : CircleAvatar(child: Icon(Icons.person)),
                     title: Text(profile['name'] ?? 'No name'),

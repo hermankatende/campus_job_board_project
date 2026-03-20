@@ -3,6 +3,7 @@ from django.core.mail import send_mail
 from django.utils import timezone
 from rest_framework import generics, permissions
 from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -96,6 +97,50 @@ class UserOnboardingView(APIView):
         except Exception:
             # Do not block onboarding if email delivery fails.
             pass
+
+
+class StudentSearchView(APIView):
+    """GET /api/users/search/ — Recruiter-facing student profile search.
+
+    Query params: name, gender (comma-separated), work_experience, skills
+    (comma-separated), age_range, location.
+    Returns student profiles only (role=student, not suspended).
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        name = request.query_params.get("name", "").strip()
+        gender_raw = request.query_params.get("gender", "").strip()
+        work_experience = request.query_params.get("work_experience", "").strip()
+        skills_raw = request.query_params.get("skills", "").strip()
+        age_range = request.query_params.get("age_range", "").strip()
+        location = request.query_params.get("location", "").strip()
+
+        queryset = UserProfile.objects.filter(
+            role=UserProfile.Role.STUDENT,
+            is_suspended=False,
+        )
+
+        if name:
+            queryset = queryset.filter(full_name__icontains=name)
+        if gender_raw:
+            genders = [g.strip() for g in gender_raw.split(",") if g.strip()]
+            if genders:
+                queryset = queryset.filter(gender__in=genders)
+        if work_experience:
+            queryset = queryset.filter(work_experience__icontains=work_experience)
+        if skills_raw:
+            skills = [s.strip() for s in skills_raw.split(",") if s.strip()]
+            for skill in skills:
+                queryset = queryset.filter(skills__icontains=skill)
+        if age_range:
+            queryset = queryset.filter(age_range=age_range)
+        if location:
+            queryset = queryset.filter(college__icontains=location)
+
+        serializer = UserProfileSerializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 class UserProfileListCreateView(generics.ListCreateAPIView):
