@@ -27,6 +27,7 @@ class AppJob {
   final String category;
   final String description;
   final String requirements;
+  final String imageUrl;
   final String employmentType;
   final String status;
   final String postedByName;
@@ -42,6 +43,7 @@ class AppJob {
     required this.category,
     required this.description,
     required this.requirements,
+    required this.imageUrl,
     required this.employmentType,
     required this.status,
     required this.postedByName,
@@ -59,6 +61,7 @@ class AppJob {
       category: json['category'] ?? '',
       description: json['description'] ?? '',
       requirements: json['requirements'] ?? '',
+      imageUrl: json['image_url'] ?? '',
       employmentType: json['employment_type'] ?? '',
       status: json['status'] ?? 'open',
       postedByName: json['posted_by_name'] ?? '',
