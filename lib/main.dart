@@ -22,7 +22,6 @@ import 'pages/onboarding/on_boarding_screen.dart';
 // import 'package:flutter/services.dart' show rootBundle;
 //import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 // Import the JobsList widget
@@ -33,13 +32,10 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load environment variables (only on non-web platforms)
-  if (!kIsWeb) {
-    try {
-      await dotenv.load(fileName: ".env");
-    } catch (error) {
-      debugPrint('Failed to load .env: $error');
-    }
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (error) {
+    debugPrint('Failed to load .env: $error');
   }
 
   final appDocumentDir = await getApplicationDocumentsDirectory();

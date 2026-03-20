@@ -18,7 +18,7 @@ class ApiException implements Exception {
 }
 
 /// Centralised HTTP client that automatically attaches the Firebase ID token
-/// to every request and points at the Django backend on PythonAnywhere.
+/// to every request and points at the deployed Django backend.
 ///
 /// Usage:
 ///   final data = await ApiClient.instance.get('/api/users/me/');
@@ -27,9 +27,14 @@ class ApiClient {
   ApiClient._();
   static final ApiClient instance = ApiClient._();
 
-  // ── Base URL from .env ────────────────────────────────────────────────────
+  static const String _compileTimeBaseUrl =
+      String.fromEnvironment('BACKEND_URL');
+
+  // ── Base URL from --dart-define or .env ──────────────────────────────────
   String get _baseUrl {
-    final url = dotenv.env['BACKEND_URL'] ?? '';
+    final url = _compileTimeBaseUrl.isNotEmpty
+        ? _compileTimeBaseUrl
+        : (dotenv.env['BACKEND_URL'] ?? '');
     // Strip a trailing slash so we never double-up
     return url.endsWith('/') ? url.substring(0, url.length - 1) : url;
   }
@@ -55,6 +60,7 @@ class ApiClient {
   // ── HTTP verbs ────────────────────────────────────────────────────────────
 
   Future<dynamic> get(String path, {bool auth = true}) async {
+    _assertConfigured();
     final response = await http.get(
       Uri.parse('$_baseUrl$path'),
       headers: await _headers(auth: auth),
@@ -64,6 +70,7 @@ class ApiClient {
 
   Future<dynamic> post(String path, Map<String, dynamic> body,
       {bool auth = true}) async {
+    _assertConfigured();
     final response = await http.post(
       Uri.parse('$_baseUrl$path'),
       headers: await _headers(auth: auth),
@@ -74,6 +81,7 @@ class ApiClient {
 
   Future<dynamic> patch(String path, Map<String, dynamic> body,
       {bool auth = true}) async {
+    _assertConfigured();
     final response = await http.patch(
       Uri.parse('$_baseUrl$path'),
       headers: await _headers(auth: auth),
@@ -83,6 +91,7 @@ class ApiClient {
   }
 
   Future<dynamic> delete(String path, {bool auth = true}) async {
+    _assertConfigured();
     final response = await http.delete(
       Uri.parse('$_baseUrl$path'),
       headers: await _headers(auth: auth),
@@ -91,6 +100,15 @@ class ApiClient {
   }
 
   // ── Response handler ──────────────────────────────────────────────────────
+
+  void _assertConfigured() {
+    if (_baseUrl.isEmpty) {
+      throw const ApiException(
+        500,
+        'Missing BACKEND_URL configuration. Set it in .env or pass --dart-define=BACKEND_URL=https://your-render-service.onrender.com.',
+      );
+    }
+  }
 
   dynamic _handleResponse(http.Response response) {
     final body = utf8.decode(response.bodyBytes);
