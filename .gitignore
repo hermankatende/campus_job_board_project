@@ -10,6 +10,9 @@
 .svn/
 migrate_working_dir/
 
+# Local scripts and tools
+smart_commit.ps1
+
 # IntelliJ related
 *.iml
 *.ipr

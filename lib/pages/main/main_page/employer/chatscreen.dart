@@ -22,6 +22,11 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  String _chatId() {
+    final ids = [widget.senderId, widget.receiverId]..sort();
+    return '${ids.first}_${ids.last}';
+  }
+
   void _sendMessage() async {
     if (_messageController.text.isEmpty) return;
 
@@ -31,7 +36,7 @@ class _ChatScreenState extends State<ChatScreen> {
       'timestamp': FieldValue.serverTimestamp(),
     };
 
-    String chatId = widget.senderId + '_' + widget.receiverId;
+    final String chatId = _chatId();
 
     DocumentReference chatDocRef = _firestore.collection('chats').doc(chatId);
     DocumentSnapshot chatDocSnapshot = await chatDocRef.get();
@@ -56,7 +61,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    String chatId = widget.senderId + '_' + widget.receiverId;
+    final String chatId = _chatId();
 
     return Scaffold(
       appBar: AppBar(

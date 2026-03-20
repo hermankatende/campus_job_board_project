@@ -15,9 +15,10 @@ class PostService {
       _cachedPosts =
           snapshot.docs.map((doc) => PostEntity.fromFirestore(doc)).toList();
       return _cachedPosts;
+    } on FirebaseException catch (e) {
+      throw Exception('Firestore error (${e.code}): ${e.message}');
     } catch (e) {
-      print('Error fetching posts: $e');
-      return [];
+      throw Exception('Failed to fetch posts: $e');
     }
   }
 }

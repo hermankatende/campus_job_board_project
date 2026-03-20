@@ -41,8 +41,7 @@ class _AddAjobState extends State<AddAjob> {
       List<dynamic> subscriptions = data['subscriptions'] ?? [];
 
       if (subscriptions.contains(jobCategory)) {
-        String token = data[
-            'fcmToken']; // Assuming you store fcmToken in each user document
+        final String? token = data['fcmToken'] as String?;
         if (token != null) {
           tokens.add(token);
         }
@@ -140,9 +139,11 @@ class _AddAjobState extends State<AddAjob> {
             ),
             SizedBox(height: 30),
             ElevatedButton(
-              onPressed: () {
-                postJob();
-                _notifyUsers('${selectedCategory}');
+              onPressed: () async {
+                final bool posted = await postJob();
+                if (posted) {
+                  await _notifyUsers(selectedCategory);
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Color(0xFFFF9228),
@@ -167,7 +168,7 @@ class _AddAjobState extends State<AddAjob> {
     );
   }
 
-  Future<void> postJob() async {
+  Future<bool> postJob() async {
     if (titleController.text.isEmpty ||
         locationController.text.isEmpty ||
         companyController.text.isEmpty ||
@@ -180,7 +181,7 @@ class _AddAjobState extends State<AddAjob> {
           content: Text('Please fill in all fields'),
         ),
       );
-      return;
+      return false;
     }
 
     // Retrieve the current user's UID
@@ -192,7 +193,7 @@ class _AddAjobState extends State<AddAjob> {
           content: Text('You need to be logged in to post a job'),
         ),
       );
-      return;
+      return false;
     }
 
     final posterId = user.uid;
@@ -226,6 +227,7 @@ class _AddAjobState extends State<AddAjob> {
 
     // Navigate back or show the list of jobs
     Navigator.of(context).pop();
+    return true;
   }
 
   Widget buildInputField(BuildContext context, String labelText,

@@ -73,7 +73,6 @@ class _ChatScreenState extends State<ChatScreen> {
           'compositeId': compositeId,
         });
         debugPrint('Message sent successfully.');
-        _loadMessages();
         _messageController.clear();
       } catch (e) {
         debugPrint('Error sending message: $e');

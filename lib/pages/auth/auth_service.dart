@@ -52,15 +52,10 @@ class AuthServices {
       String? token = await messaging.getToken();
       if (token != null) {
         String userId = userCredential.user!.uid;
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(userId)
-            .update({
+        await FirebaseFirestore.instance.collection('users').doc(userId).set({
           'fcmToken': token,
-        });
+        }, SetOptions(merge: true));
       }
-      await FirebaseAuth.instance
-          .signInWithEmailAndPassword(email: email, password: password);
 
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('You are Logged in')));
@@ -72,6 +67,10 @@ class AuthServices {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Password did not match')));
       }
+    } on FirebaseException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Firebase error: ${e.message ?? e.code}')),
+      );
     }
   }
 

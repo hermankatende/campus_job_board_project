@@ -2,12 +2,12 @@
 
 import 'dart:io';
 import 'package:cjb/pages/auth/identity.dart';
+import 'package:cjb/services/cloudinary_upload_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 //import 'package:google_fonts/google_fonts.dart';
-import 'package:path/path.dart' as path;
 
 class ProfileWidget extends StatefulWidget {
   final String imagePath;
@@ -34,8 +34,8 @@ class _ProfileWidgetState extends State<ProfileWidget> {
       setState(() {
         _profileImage = File(pickedFile.path);
       });
+      await _uploadImage();
     }
-    _uploadImage;
   }
 
   Future<void> _uploadImage() async {
@@ -44,17 +44,17 @@ class _ProfileWidgetState extends State<ProfileWidget> {
       _isUploading = true;
     });
     try {
-      // Use path.basename to extract the file name
-      final fileName = path.basename(_profileImage!.path);
-      final storageReference =
-          FirebaseStorage.instance.ref().child('images/$fileName');
-      final uploadTask = storageReference.putFile(_profileImage!);
-      await uploadTask.whenComplete(() => null); // Ensures task completion
-      final downloadURL = await storageReference.getDownloadURL();
-      await FirebaseFirestore.instance.collection('users').add({
-        'url': downloadURL,
-        //'timestamp': FieldValue.serverTimestamp(),
-      });
+      final downloadURL = await CloudinaryUploadService.uploadFile(
+        filePath: _profileImage!.path,
+        folder: 'profile_images',
+      );
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUser.uid)
+            .set({'image_path': downloadURL}, SetOptions(merge: true));
+      }
       setState(() {
         _isUploading = false;
       });

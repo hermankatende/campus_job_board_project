@@ -1,11 +1,11 @@
 // ignore_for_file: file_names, camel_case_types, use_super_parameters, use_build_context_synchronously, prefer_const_constructors, unused_local_variable, sized_box_for_whitespace, avoid_unnecessary_containers
 
 import 'package:cjb/pages/main/main_page/joblist.dart';
+import 'package:cjb/services/cloudinary_upload_service.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:file_picker/file_picker.dart';
+// import 'package:file_picker/file_picker.dart';
 import 'dart:io';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mailer/mailer.dart';
@@ -25,19 +25,19 @@ class _CV_pageState extends State<CV_page> {
   bool isUploading = false;
   String downloadUrl = '';
 
-  Future<void> pickFile() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf'],
-    );
+  // Future<void> pickFile() async {
+  //   FilePickerResult? result = await FilePicker.platform.pickFiles(
+  //     type: FileType.custom,
+  //     allowedExtensions: ['pdf'],
+  //   );
 
-    if (result != null) {
-      setState(() {
-        selectedFile = File(result.files.single.path!);
-        fileName = result.files.single.name;
-      });
-    }
-  }
+  //   if (result != null) {
+  //     setState(() {
+  //       selectedFile = File(result.files.single.path!);
+  //       fileName = result.files.single.name;
+  //     });
+  //   }
+  // }
 
   Future<void> uploadFile() async {
     if (selectedFile == null) return;
@@ -47,15 +47,10 @@ class _CV_pageState extends State<CV_page> {
     });
 
     try {
-      // Upload file to Firebase Storage
-      String filePath =
-          'uploads/${DateTime.now().millisecondsSinceEpoch}_$fileName';
-      UploadTask uploadTask =
-          FirebaseStorage.instance.ref(filePath).putFile(selectedFile!);
-      TaskSnapshot snapshot = await uploadTask;
-
-      // Get the download URL
-      downloadUrl = await snapshot.ref.getDownloadURL();
+      downloadUrl = await CloudinaryUploadService.uploadFile(
+        filePath: selectedFile!.path,
+        folder: 'cvs',
+      );
 
       // Save the URL in Firestore
       await FirebaseFirestore.instance.collection('uploaded_cvs').add({
@@ -208,13 +203,13 @@ class _CV_pageState extends State<CV_page> {
                                               )
                                             ],
                                           ),
-                                          Row(
-                                            children: [
-                                              ElevatedButton(
-                                                  onPressed: pickFile,
-                                                  child: Text('Pick file'))
-                                            ],
-                                          )
+                                          // Row(
+                                          //   children: [
+                                          //     ElevatedButton(
+                                          //         onPressed: pickFile,
+                                          //         child: Text('Pick file'))
+                                          //   ],
+                                          // )
                                         ],
                                       ),
                                     )

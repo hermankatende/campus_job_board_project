@@ -1,0 +1,38 @@
+BASE PATHS
+- /api/common/
+- /api/users/
+- /api/jobs/
+- /api/applications/
+
+COMMON
+GET /api/common/health/
+GET /api/common/stats/
+
+USERS
+GET /api/users/me/
+PATCH /api/users/me/
+GET /api/users/profiles/            (admin-only)
+POST /api/users/profiles/           (admin-only)
+GET /api/users/profiles/<id>/       (admin-only)
+PATCH /api/users/profiles/<id>/     (admin-only)
+DELETE /api/users/profiles/<id>/    (admin-only)
+
+JOBS
+GET /api/jobs/?search=&category=&status=&location=
+POST /api/jobs/
+GET /api/jobs/mine/
+GET /api/jobs/<id>/
+PATCH /api/jobs/<id>/
+DELETE /api/jobs/<id>/
+
+APPLICATIONS
+GET /api/applications/?role=applicant|employer
+POST /api/applications/
+GET /api/applications/<id>/
+PATCH /api/applications/<id>/
+DELETE /api/applications/<id>/
+GET /api/applications/job/<job_id>/
+
+AUTH
+- Send Firebase ID token in Authorization header:
+  Authorization: Bearer <firebase-id-token>

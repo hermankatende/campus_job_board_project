@@ -1,13 +1,12 @@
 // ignore_for_file: avoid_print, prefer_const_constructors, unnecessary_brace_in_string_interps, use_build_context_synchronously, avoid_function_literals_in_foreach_calls, no_leading_underscores_for_local_identifiers, use_key_in_widget_constructors, library_private_types_in_public_api, depend_on_referenced_packages
 
+import 'package:cjb/services/cloudinary_upload_service.dart';
 import 'package:flutter/material.dart';
 //import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:path/path.dart' as path;
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -109,13 +108,10 @@ class _ProfileState extends State<Profile> {
             return;
           }
 
-          // Upload image to Firebase Storage with user ID in the file name
-          final fileName = '${userId}${path.basename(tempFile.path)}';
-          final storageReference =
-              FirebaseStorage.instance.ref().child('profile_images/$fileName');
-          final uploadTask = storageReference.putFile(tempFile);
-          await uploadTask.whenComplete(() => null);
-          downloadURL = await storageReference.getDownloadURL();
+          downloadURL = await CloudinaryUploadService.uploadFile(
+            filePath: tempFile.path,
+            folder: 'profile_images',
+          );
         }
       }
 

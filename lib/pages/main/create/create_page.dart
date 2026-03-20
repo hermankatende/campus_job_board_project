@@ -2,12 +2,12 @@
 
 import 'package:cjb/pages/auth/identity.dart';
 import 'package:cjb/pages/main/create/add_job.dart';
+import 'package:cjb/services/cloudinary_upload_service.dart';
 //import 'package:cjb/pages/main/home/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 //import 'global_variables.dart';
 
@@ -56,14 +56,10 @@ class _AddPostScreenState extends State<AddPostScreen> {
     }
 
     try {
-      // Upload image to Firebase Storage
-      String fileName = 'posts/${DateTime.now().millisecondsSinceEpoch}.jpg';
-      Reference storageRef = FirebaseStorage.instance.ref().child(fileName);
-      UploadTask uploadTask = storageRef.putFile(_image!);
-      TaskSnapshot storageSnapshot = await uploadTask;
-
-      // Get image download URL
-      String imageUrl = await storageSnapshot.ref.getDownloadURL();
+      final imageUrl = await CloudinaryUploadService.uploadFile(
+        filePath: _image!.path,
+        folder: 'posts',
+      );
 
       // Get user data from global variables
       String username = GlobalVariables().username ?? 'Unknown User';

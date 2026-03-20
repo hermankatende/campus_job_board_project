@@ -22,7 +22,9 @@ import 'pages/onboarding/on_boarding_screen.dart';
 // import 'package:flutter/services.dart' show rootBundle;
 //import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path_provider/path_provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 // Import the JobsList widget
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -30,6 +32,16 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables (only on non-web platforms)
+  if (!kIsWeb) {
+    try {
+      await dotenv.load(fileName: ".env");
+    } catch (error) {
+      debugPrint('Failed to load .env: $error');
+    }
+  }
+
   final appDocumentDir = await getApplicationDocumentsDirectory();
   await Hive.initFlutter(appDocumentDir.path);
   await Hive.openBox('notifications');
@@ -114,16 +126,22 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _storeFCMToken() async {
-    FirebaseMessaging messaging = FirebaseMessaging.instance;
-    String? token = await messaging.getToken();
-    if (token != null) {
-      String userId = FirebaseAuth.instance.currentUser!.uid;
-      await FirebaseFirestore.instance.collection('users').doc(userId).update({
-        'fcmToken': token,
-      });
-      print('Stored FCM token: $token');
-    } else {
-      print('Failed to get FCM token');
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+      FirebaseMessaging messaging = FirebaseMessaging.instance;
+      String? token = await messaging.getToken();
+      if (token != null) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUser.uid)
+            .set({'fcmToken': token}, SetOptions(merge: true));
+        print('Stored FCM token: $token');
+      } else {
+        print('Failed to get FCM token');
+      }
+    } on FirebaseException catch (error) {
+      debugPrint('Failed to store FCM token: ${error.message ?? error.code}');
     }
   }
 
@@ -189,7 +207,7 @@ class _MyAppState extends State<MyApp> {
 }
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   print('Handling a background message: ${message.messageId}');
 
   // Display notification

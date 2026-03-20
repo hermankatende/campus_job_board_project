@@ -478,13 +478,17 @@ class JobCard extends StatelessWidget {
                     )),
           );
         } else if (title == "Chat") {
+          final currentUser = FirebaseAuth.instance.currentUser;
+          if (currentUser == null) {
+            return;
+          }
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) => ChatScreen(
                 jobId: jobId,
                 posterId: posterId,
-                receiverId: posterId, // Receiver is the job poster
+                receiverId: currentUser.uid,
               ),
             ),
           );
