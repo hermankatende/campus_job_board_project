@@ -1,12 +1,9 @@
-// ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
+// ignore_for_file: prefer_const_constructors
+
 import 'package:cjb/pages/auth/preferences.dart';
 import 'package:cjb/pages/main/main_page/main_page.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cjb/services/auth_service.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/material.dart';
-import 'package:cjb/pages/main/home/home_page.dart';
-//import 'package:cjb/pages/auth/subscription_screen.dart';
 
 class GlobalVariables {
   static final GlobalVariables _instance = GlobalVariables._internal();
@@ -15,43 +12,68 @@ class GlobalVariables {
 
   GlobalVariables._internal();
 
-  // Define all the fields to store user information
   String username = '';
   String email = '';
   String profileImageUrl = '';
-  String aboutMe = '';
-  String workExperience = '';
-  String education = '';
-  String skills = '';
-  String hobbiesInterests = '';
-  String portfolioUrl = '';
   String jobPreference = '';
 
-  // Method to load user data from Firestore
   Future<void> loadUserData() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-      if (userDoc.exists) {
-        username = userDoc['name'] ?? '';
-        email = userDoc['email'] ?? '';
-        profileImageUrl = userDoc['image_path'] ?? '';
-        aboutMe = userDoc['about_me'] ?? '';
-        workExperience = userDoc['work_experience'] ?? '';
-        education = userDoc['education'] ?? '';
-        skills = userDoc['skills'] ?? '';
-        hobbiesInterests = userDoc['hobbies_interests'] ?? '';
-        portfolioUrl = userDoc['portfolio_url'] ?? '';
-        jobPreference = userDoc['job_preference'] ?? '';
-      }
+    try {
+      final profile = await AuthService.instance.syncProfile();
+      username = profile.fullName;
+      email = profile.email;
+      profileImageUrl = profile.imageUrl;
+      jobPreference = profile.jobPreference;
+    } catch (_) {
+      // Keep previous values if profile sync fails.
     }
   }
 }
 
-class RoleSelectionPage extends StatelessWidget {
+class RoleSelectionPage extends StatefulWidget {
+  const RoleSelectionPage({super.key});
+
+  @override
+  State<RoleSelectionPage> createState() => _RoleSelectionPageState();
+}
+
+class _RoleSelectionPageState extends State<RoleSelectionPage> {
+  bool _loading = false;
+
+  Future<void> _selectRole(String role) async {
+    setState(() => _loading = true);
+    try {
+      final profile = await AuthService.instance.completeOnboarding(role: role);
+      if (!mounted) return;
+
+      if (profile.isStudent) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => SubscriptionScreen()),
+          (route) => false,
+        );
+      } else {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MainPage(
+              firstName: profile.fullName,
+              first_Name: profile.fullName,
+            ),
+          ),
+          (route) => false,
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -62,33 +84,23 @@ class RoleSelectionPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ElevatedButton(
-              onPressed: () {
-                // Navigate to HomePage if the user selects Employee
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => MainPage(
-                      firstName: '',
-                      first_Name: '',
-                    ),
-                  ),
-                  (route) => false,
-                );
-              },
-              child: Text('I am an Employee'),
+              onPressed: _loading ? null : () => _selectRole('student'),
+              child: Text('I am a Student'),
             ),
             SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {
-                // Navigate to SubscriptionScreen if the user selects Job Seeker
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => SubscriptionScreen()),
-                  (route) => false,
-                );
-              },
-              child: Text('I am a Job Seeker (Student)'),
+              onPressed: _loading ? null : () => _selectRole('recruiter'),
+              child: Text('I am a Recruiter'),
             ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _loading ? null : () => _selectRole('lecturer'),
+              child: Text('I am a Lecturer'),
+            ),
+            if (_loading) ...[
+              SizedBox(height: 24),
+              Center(child: CircularProgressIndicator()),
+            ]
           ],
         ),
       ),

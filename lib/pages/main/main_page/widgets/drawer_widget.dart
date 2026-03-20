@@ -1,12 +1,13 @@
 // ignore_for_file: prefer_const_literals_to_create_immutables, prefer_const_constructors, use_super_parameters, unnecessary_string_interpolations
 
-import 'package:cjb/pages/auth/auth_service.dart';
 import 'package:cjb/pages/auth/identity.dart';
+import 'package:cjb/pages/auth/sign_in_page.dart';
 import 'package:cjb/pages/main/main_page/employer/s.dart';
 import 'package:cjb/pages/main/main_page/savedjobs.dart';
 import 'package:cjb/pages/main/settings.dart';
 import 'package:cjb/pages/main/user_profile/profile_page.dart';
 import 'package:cjb/pages/main/user_profile/user_surport.dart';
+import 'package:cjb/services/auth_service.dart';
 //import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cjb/theme/styles.dart';
@@ -211,7 +212,12 @@ class _DrawerWidgetState extends State<DrawerWidget> {
                     padding: EdgeInsets.only(left: 20.0),
                     child: GestureDetector(
                       onTap: () {
-                        AuthServices.logoutUser(context);
+                        AuthService.instance.signOut();
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (_) => SignInPage()),
+                          (route) => false,
+                        );
                       },
                       child: Row(
                         children: [

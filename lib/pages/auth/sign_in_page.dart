@@ -1,8 +1,9 @@
 // ignore_for_file: prefer_const_literals_to_create_immutables, prefer_const_constructors, use_key_in_widget_constructors, library_private_types_in_public_api, avoid_print, use_build_context_synchronously, unused_element, sized_box_for_whitespace
-import 'package:cjb/pages/auth/firebase_auth_services.dart';
 import 'package:cjb/pages/auth/forgot_password.dart';
+import 'package:cjb/pages/auth/identity.dart';
 import 'package:cjb/pages/auth/sign_up_page.dart';
 import 'package:cjb/pages/main/main_page/main_page.dart';
+import 'package:cjb/services/auth_service.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 //import 'package:flutter_svg/flutter_svg.dart';
@@ -19,8 +20,6 @@ class _SignInPageState extends State<SignInPage> {
   bool _rememberMe = false;
   bool _obscurePassword = true;
 
-  final FirebaseAuthServices _authServices = FirebaseAuthServices();
-
   void _toggleRememberMe(bool? value) {
     setState(() {
       _rememberMe = value ?? false;
@@ -36,30 +35,35 @@ class _SignInPageState extends State<SignInPage> {
   Future<void> _login() async {
     final email = _emailController.text;
     final password = _passwordController.text;
-    // Handle login logic here
-    print('Email: $email');
-    print('Password: $password');
+    try {
+      final profile = await AuthService.instance.signIn(email, password);
 
-    final user =
-        await _authServices.signInWithEmailAndPassword(email, password);
+      if (!mounted) return;
 
-    if (user != null) {
-      // Navigate to home page
+      if (profile.role.isEmpty) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => RoleSelectionPage()),
+          (route) => false,
+        );
+        return;
+      }
+
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
           builder: (_) => MainPage(
-            firstName: _emailController.text,
-            first_Name: _emailController.text,
+            firstName: profile.fullName,
+            first_Name: profile.fullName,
           ),
         ),
         (route) => false,
       );
-    } else {
-      // Show invalid login credentials message
+    } catch (error) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Invalid login credentials'),
+          content: Text(error.toString()),
           backgroundColor: Colors.red,
         ),
       );

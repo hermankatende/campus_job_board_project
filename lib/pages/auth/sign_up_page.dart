@@ -1,8 +1,7 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
-import 'package:cjb/pages/auth/auth_service.dart';
 import 'package:cjb/pages/auth/identity.dart';
-import 'package:cjb/pages/auth/preferences.dart';
+import 'package:cjb/services/auth_service.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:cjb/pages/auth/sign_in_page.dart';
@@ -229,28 +228,24 @@ class _SignUpState extends State<SignUp> {
                 ),
                 child: TextButton(
                   onPressed: () async {
-                    // Call signupUser and await the result
-                    bool success = await AuthServices.signupUser(
-                      emailController.text,
-                      passwordController.text,
-                      fullNameController.text,
-                      context,
-                    );
+                    try {
+                      await AuthService.instance.registerAccount(
+                        email: emailController.text,
+                        password: passwordController.text,
+                        fullName: fullNameController.text,
+                      );
 
-                    if (success) {
-                      // If signup is successful, navigate to MainPage
+                      if (!mounted) return;
                       Navigator.pushAndRemoveUntil(
                         context,
-                        MaterialPageRoute(
-                          builder: (_) => RoleSelectionPage(),
-                        ),
+                        MaterialPageRoute(builder: (_) => RoleSelectionPage()),
                         (route) => false,
                       );
-                    } else {
-                      // Clear the text fields or keep them for user to try again
-                      emailController.clear();
-                      passwordController.clear();
-                      fullNameController.clear();
+                    } catch (error) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(error.toString())),
+                      );
                     }
                   },
                   style: TextButton.styleFrom(

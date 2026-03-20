@@ -177,6 +177,31 @@ class AuthService {
     }
   }
 
+  /// Creates Firebase account, syncs profile to backend and stores full name.
+  Future<UserProfile> registerAccount({
+    required String email,
+    required String password,
+    required String fullName,
+  }) async {
+    try {
+      final cred = await _firebase.createUserWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
+
+      if (fullName.trim().isNotEmpty) {
+        await cred.user?.updateDisplayName(fullName.trim());
+      }
+
+      await _syncProfile();
+      return await updateProfile({'full_name': fullName.trim()});
+    } on FirebaseAuthException catch (e) {
+      throw _friendlyError(e);
+    } on ApiException catch (e) {
+      throw 'Backend error: ${e.message}';
+    }
+  }
+
   // ── Register ──────────────────────────────────────────────────────────────
 
   /// Creates a Firebase account, then pushes the initial profile to backend.
@@ -223,6 +248,17 @@ class AuthService {
   /// Patches the current user's profile and updates the local cache.
   Future<UserProfile> updateProfile(Map<String, dynamic> fields) async {
     final data = await _api.patch('/api/users/me/', fields);
+    _profile = UserProfile.fromJson(data as Map<String, dynamic>);
+    return _profile!;
+  }
+
+  /// Completes role-based onboarding on backend.
+  Future<UserProfile> completeOnboarding({
+    required String role,
+    Map<String, dynamic> profileData = const {},
+  }) async {
+    final body = Map<String, dynamic>.from(profileData)..['role'] = role;
+    final data = await _api.post('/api/users/onboarding/', body);
     _profile = UserProfile.fromJson(data as Map<String, dynamic>);
     return _profile!;
   }
