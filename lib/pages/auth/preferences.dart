@@ -2,7 +2,7 @@
 
 // // // ignore_for_file: prefer_const_literals_to_create_immutables, prefer_const_constructors, unnecessary_brace_in_string_interps, non_constant_identifier_names
 //import 'package:cjb/pages/main/home/home_page.dart';
-import 'package:cjb/pages/main/main_page/main_page.dart';
+import 'package:cjb/pages/app_router.dart';
 import 'package:cjb/services/auth_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -68,15 +68,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       await AuthService.instance.saveFcmToken(token);
     }
 
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const MainPage(
-          firstName: '',
-          first_Name: '',
-        ),
-      ),
-      (route) => false,
-    );
+    final profile = await AuthService.instance.syncProfile();
+    if (!mounted) return;
+    navigateToHome(context, profile);
   }
 }

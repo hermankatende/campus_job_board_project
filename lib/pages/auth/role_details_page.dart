@@ -1,7 +1,7 @@
 // ignore_for_file: prefer_const_constructors
 
+import 'package:cjb/pages/app_router.dart';
 import 'package:cjb/pages/auth/preferences.dart';
-import 'package:cjb/pages/main/main_page/main_page.dart';
 import 'package:cjb/services/auth_service.dart';
 import 'package:flutter/material.dart';
 
@@ -71,16 +71,7 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
           (route) => false,
         );
       } else {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder: (_) => MainPage(
-              firstName: profile.fullName,
-              first_Name: profile.fullName,
-            ),
-          ),
-          (route) => false,
-        );
+        navigateToHome(context, profile);
       }
     } catch (error) {
       if (!mounted) return;

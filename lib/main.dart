@@ -2,10 +2,10 @@
 
 //import 'dart:convert';
 
+import 'package:cjb/pages/app_router.dart';
 import 'package:cjb/firebase_options.dart';
 //import 'package:cjb/pages/auth/user_pref.dart';
 import 'package:cjb/pages/main/main_page/joblist.dart';
-import 'package:cjb/pages/main/main_page/main_page.dart'; // Added import for Notification_Page
 import 'package:cjb/services/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -186,16 +186,28 @@ class _MyAppState extends State<MyApp> {
   }
 
   Widget _buildHome() {
-    if (FirebaseAuth.instance.currentUser != null) {
-      return MainPage(
-        firstName: '',
-        first_Name: '',
-      ); // Navigate to HomePage if the user is logged in
-    } else {
-      return SplashPage(
-        child: OnBoardingScreen(),
-      );
+    if (FirebaseAuth.instance.currentUser == null) {
+      return SplashPage(child: OnBoardingScreen());
     }
+    return FutureBuilder(
+      future: AuthService.instance.syncProfile(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (snapshot.hasError || !snapshot.hasData) {
+          // Profile sync failed — send to onboarding / sign-in
+          return SplashPage(child: OnBoardingScreen());
+        }
+        final profile = snapshot.data!;
+        if (needsOnboarding(profile)) {
+          return SplashPage(child: OnBoardingScreen());
+        }
+        return homePageForProfile(profile);
+      },
+    );
   }
 }
 

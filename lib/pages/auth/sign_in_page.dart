@@ -1,12 +1,10 @@
-// ignore_for_file: prefer_const_literals_to_create_immutables, prefer_const_constructors, use_key_in_widget_constructors, library_private_types_in_public_api, avoid_print, use_build_context_synchronously, unused_element, sized_box_for_whitespace
+// ignore_for_file: prefer_const_literals_to_create_immutables, prefer_const_constructors, use_key_in_widget_constructors, library_private_types_in_public_api, avoid_print, use_build_context_synchronously
+import 'package:cjb/pages/app_router.dart';
 import 'package:cjb/pages/auth/forgot_password.dart';
-import 'package:cjb/pages/auth/identity.dart';
 import 'package:cjb/pages/auth/sign_up_page.dart';
-import 'package:cjb/pages/main/main_page/main_page.dart';
 import 'package:cjb/services/auth_service.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-//import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class SignInPage extends StatefulWidget {
@@ -17,81 +15,38 @@ class SignInPage extends StatefulWidget {
 class _SignInPageState extends State<SignInPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _rememberMe = false;
   bool _obscurePassword = true;
-
-  void _toggleRememberMe(bool? value) {
-    setState(() {
-      _rememberMe = value ?? false;
-    });
-  }
-
-  void _togglePasswordVisibility() {
-    setState(() {
-      _obscurePassword = !_obscurePassword;
-    });
-  }
-
-  bool _needsOnboarding(UserProfile profile) {
-    if (profile.role.isEmpty) return true;
-
-    if (profile.isStudent) {
-      return profile.college.isEmpty ||
-          profile.program.isEmpty ||
-          profile.studentNumber.isEmpty;
-    }
-
-    if (profile.isRecruiter) {
-      return profile.companyName.isEmpty;
-    }
-
-    if (profile.isLecturer) {
-      return profile.department.isEmpty;
-    }
-
-    return false;
-  }
+  bool _loading = false;
 
   Future<void> _login() async {
-    final email = _emailController.text;
+    final email = _emailController.text.trim();
     final password = _passwordController.text;
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter email and password')),
+      );
+      return;
+    }
+    setState(() => _loading = true);
     try {
       final profile = await AuthService.instance.signIn(email, password);
-
       if (!mounted) return;
-
-      if (_needsOnboarding(profile)) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => RoleSelectionPage()),
-          (route) => false,
-        );
-        return;
-      }
-
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (_) => MainPage(
-            firstName: profile.fullName,
-            first_Name: profile.fullName,
-          ),
-        ),
-        (route) => false,
-      );
+      navigateToHome(context, profile);
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error.toString()),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text(error.toString()), backgroundColor: Colors.red),
       );
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
-  void _loginWithGoogle() {
-    // Handle Google login logic here
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -100,186 +55,139 @@ class _SignInPageState extends State<SignInPage> {
       body: SingleChildScrollView(
         child: Container(
           decoration: BoxDecoration(
-            color: Color(0xFFFFFFFF),
+            color: const Color(0xFFFFFFFF),
             borderRadius: BorderRadius.circular(30),
           ),
           child: Padding(
-            padding: EdgeInsets.fromLTRB(29, 102, 20.9, 50),
+            padding: const EdgeInsets.fromLTRB(29, 102, 20.9, 50),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                    width: 100,
-                    height: 100,
-                    child: Image.asset('assets/logo_icon.png')),
+                Image.asset('assets/logo_icon.png', width: 100, height: 100),
+                const SizedBox(height: 16),
                 Text(
                   'Welcome Back',
                   style: GoogleFonts.dmSans(
                     fontWeight: FontWeight.w700,
                     fontSize: 30,
-                    color: Color(0xFF0D0140),
+                    color: const Color(0xFF0D0140),
                   ),
                 ),
-                Text('login into ur cjb account',
-                    style: TextStyle(color: Color(0xFF0D0140))),
-                SizedBox(
-                  height: 20,
+                const Text(
+                  'Login to your CJB account',
+                  style: TextStyle(color: Color(0xFF524B6B), fontSize: 13),
                 ),
+                const SizedBox(height: 24),
                 Align(
-                  alignment: Alignment.topLeft,
-                  child: Text(
-                    'Email',
-                    style: GoogleFonts.dmSans(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                      color: Color(0xFF0D0140),
-                    ),
-                  ),
+                  alignment: Alignment.centerLeft,
+                  child: Text('Email',
+                      style: GoogleFonts.dmSans(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                          color: const Color(0xFF0D0140))),
                 ),
-                SizedBox(height: 5),
+                const SizedBox(height: 5),
                 TextField(
                   controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
                     hintText: 'Enter your email',
                     contentPadding:
-                        EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                        borderRadius: BorderRadius.circular(10)),
                     filled: true,
                     fillColor: Colors.white,
                   ),
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 Align(
-                  alignment: Alignment.topLeft,
-                  child: Text(
-                    'Password',
-                    style: GoogleFonts.openSans(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                      color: Color(0xFF0D0140),
-                    ),
-                  ),
+                  alignment: Alignment.centerLeft,
+                  child: Text('Password',
+                      style: GoogleFonts.openSans(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                          color: const Color(0xFF0D0140))),
                 ),
-                SizedBox(height: 5),
+                const SizedBox(height: 5),
                 TextField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
                     hintText: 'Enter your password',
                     contentPadding:
-                        EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                        borderRadius: BorderRadius.circular(10)),
                     filled: true,
                     fillColor: Colors.white,
                     suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility
-                            : Icons.visibility_off,
-                      ),
-                      onPressed: _togglePasswordVisibility,
+                      icon: Icon(_obscurePassword
+                          ? Icons.visibility
+                          : Icons.visibility_off),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
                     ),
                   ),
                 ),
-                SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Checkbox(
-                          value: _rememberMe,
-                          onChanged: _toggleRememberMe,
-                        ),
-                        Text(
-                          'Remember me',
-                          style: GoogleFonts.dmSans(
-                            fontWeight: FontWeight.w400,
-                            fontSize: 12,
-                            color: Color(0xFFAAA6B9),
-                          ),
-                        ),
-                      ],
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(builder: (_) => ForgotPassword()),
-                            (route) => false);
-                      },
-                      child: Text(
-                        'Forgot Password?',
-                        style: GoogleFonts.dmSans(
-                          fontWeight: FontWeight.w400,
-                          fontSize: 12,
-                          color: Color(0xFF0D0140),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 32),
-                ElevatedButton(
-                  onPressed: _login,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color.fromRGBO(0, 96, 243, 1),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    padding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
-                  ),
-                  child: Text(
-                    'LOGIN',
-                    style: GoogleFonts.dmSans(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                      color: Colors.white,
-                      letterSpacing: 0.8,
+                const SizedBox(height: 14),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: GestureDetector(
+                    onTap: () => Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => ForgotPassword())),
+                    child: Text(
+                      'Forgot Password?',
+                      style: GoogleFonts.dmSans(
+                          fontSize: 12, color: const Color(0xFF0D0140)),
                     ),
                   ),
                 ),
-                SizedBox(height: 19),
-                //
-                SizedBox(height: 16),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _loading ? null : _login,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromRGBO(0, 96, 243, 1),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6)),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    child: _loading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                                color: Colors.white, strokeWidth: 2))
+                        : Text('LOGIN',
+                            style: GoogleFonts.dmSans(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                                color: Colors.white,
+                                letterSpacing: 0.8)),
+                  ),
+                ),
+                const SizedBox(height: 20),
                 RichText(
                   text: TextSpan(
-                    style: GoogleFonts.openSans(
-                      fontWeight: FontWeight.w400,
-                      fontSize: 12,
-                      color: Color(0xFF524B6B),
-                    ),
+                    style: GoogleFonts.dmSans(
+                        fontSize: 12, color: const Color(0xFF524B6B)),
                     children: [
-                      TextSpan(
-                        text: 'You dont have an account yet?  ',
-                        style: GoogleFonts.dmSans(
-                          fontWeight: FontWeight.w400,
-                          fontSize: 12,
-                          height: 1.3,
-                        ),
-                      ),
+                      const TextSpan(text: "Don't have an account yet?  "),
                       TextSpan(
                         text: 'Sign up',
                         style: GoogleFonts.dmSans(
-                          fontWeight: FontWeight.w400,
+                          fontWeight: FontWeight.w600,
                           fontSize: 12,
                           decoration: TextDecoration.underline,
-                          height: 1.3,
-                          color: Color.fromRGBO(0, 96, 243, 1),
-                          decorationColor: Color.fromRGBO(0, 96, 243, 1),
+                          color: const Color.fromRGBO(0, 96, 243, 1),
                         ),
                         recognizer: TapGestureRecognizer()
-                          ..onTap = () {
-                            Navigator.pushAndRemoveUntil(
-                                context,
-                                MaterialPageRoute(builder: (_) => SignUp()),
-                                (route) => false);
-                          },
+                          ..onTap = () => Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(builder: (_) => SignUp()),
+                              (route) => false),
                       ),
                     ],
                   ),
