@@ -1,3 +1,5 @@
+import json
+
 from django.db.models import Count
 from rest_framework import permissions
 from rest_framework.response import Response
@@ -32,3 +34,32 @@ class DashboardStatsView(APIView):
                 "top_categories": list(top_categories),
             }
         )
+
+
+class SendNotificationView(APIView):
+    """Proxy that sends an FCM push notification via firebase-admin."""
+
+    def post(self, request):
+        token = request.data.get("token", "").strip()
+        title = request.data.get("title", "")
+        body = request.data.get("body", "")
+
+        if not token:
+            return Response({"error": "token is required"}, status=400)
+
+        try:
+            import firebase_admin
+            from firebase_admin import messaging
+
+            # Ensure Firebase is initialised (reuses the auth module's logic)
+            from apps.common.auth import FirebaseAuthentication
+            FirebaseAuthentication._initialize_firebase_if_needed()
+
+            message = messaging.Message(
+                notification=messaging.Notification(title=title, body=body),
+                token=token,
+            )
+            messaging.send(message)
+            return Response({"status": "sent"})
+        except Exception as exc:
+            return Response({"error": str(exc)}, status=500)

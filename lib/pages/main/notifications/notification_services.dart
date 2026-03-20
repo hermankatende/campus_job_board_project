@@ -1,35 +1,26 @@
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:cjb/services/api_client.dart';
 
 class NotificationService {
-  final String apiUrl =
-      'https://cjb-backend-c13f38f16c2e.herokuapp.com/sendNotification'; // Ensure this is correct
+  final _api = ApiClient.instance;
 
   Future<void> sendNotification(String token, String title, String body) async {
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
+    try {
+      await _api.post('/api/common/send-notification/', {
         'token': token,
         'title': title,
         'body': body,
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      print('Notification sent successfully');
-    } else {
-      print('Failed to send notification: ${response.body}');
+      });
+    } on ApiException catch (e) {
+      // ignore_for_file: avoid_print
+      print('Failed to send notification: ${e.message}');
     }
   }
 
   Future<void> sendNotificationsToSubscribers(
       String jobCategory, List<String> tokens) async {
-    for (String token in tokens) {
+    for (final token in tokens) {
       await sendNotification(
-          token, 'A new job posted', 'A new $jobCategory job has been posted');
+          token, 'New job posted', 'A new $jobCategory job has been posted');
     }
   }
 }

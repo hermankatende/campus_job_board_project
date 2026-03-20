@@ -12,17 +12,37 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "email",
             "full_name",
             "role",
-            "about_me",
-            "work_experience",
-            "education",
-            "skills",
-            "hobbies_interests",
-            "portfolio_url",
-            "job_preference",
+            "phone",
+            "image_url",
             "gender",
             "age_range",
-            "image_url",
+            # Shared
+            "about_me",
+            "skills",
+            "portfolio_url",
+            # Student
+            "college",
+            "program",
+            "student_number",
+            "work_experience",
+            "education",
+            "hobbies_interests",
+            "job_preference",
+            "resume_url",
+            "notifications_enabled",
+            "fcm_token",
+            # Recruiter
+            "company_name",
+            "company_description",
+            "company_website",
+            "company_location",
+            # Lecturer
+            "department",
+            "is_verified",
+            # Admin-controlled
+            "is_suspended",
+            "last_login_at",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "firebase_uid", "created_at", "updated_at"]
+        read_only_fields = ["id", "firebase_uid", "is_verified", "is_suspended", "created_at", "updated_at"]
