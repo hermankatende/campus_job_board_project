@@ -1,11 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class PostEntity {
   final String? username;
   final String? description;
   final String? imageUrl;
   final String? email;
-  final Timestamp? timestamp;
+  final DateTime? timestamp;
 
   PostEntity({
     this.username,
@@ -15,14 +13,15 @@ class PostEntity {
     this.timestamp,
   });
 
-  factory PostEntity.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+  factory PostEntity.fromJson(Map<String, dynamic> data) {
     return PostEntity(
       username: data['username'] as String? ?? '',
       description: data['description'] as String? ?? '',
       imageUrl: data['imageUrl'] as String? ?? '',
       email: data['email'] as String? ?? '',
-      timestamp: data['timestamp'] as Timestamp?,
+      timestamp: data['timestamp'] != null
+          ? DateTime.tryParse(data['timestamp'].toString())
+          : null,
     );
   }
 }

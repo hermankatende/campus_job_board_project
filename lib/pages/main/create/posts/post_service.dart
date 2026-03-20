@@ -1,8 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cjb/data/post_entity.dart';
+import 'package:cjb/services/jobs_service.dart';
 
 class PostService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final JobsService _jobsService = JobsService.instance;
   List<PostEntity> _cachedPosts = [];
 
   Future<List<PostEntity>> fetchPosts() async {
@@ -11,14 +11,21 @@ class PostService {
     }
 
     try {
-      final snapshot = await _firestore.collection('posts').get();
-      _cachedPosts =
-          snapshot.docs.map((doc) => PostEntity.fromFirestore(doc)).toList();
+      final jobs = await _jobsService.fetchJobs();
+      _cachedPosts = jobs
+          .map(
+            (job) => PostEntity(
+              username: job.postedByName.isNotEmpty ? job.postedByName : 'User',
+              description: job.description,
+              imageUrl: job.imageUrl,
+              email: job.company,
+              timestamp: job.createdAt,
+            ),
+          )
+          .toList();
       return _cachedPosts;
-    } on FirebaseException catch (e) {
-      throw Exception('Firestore error (${e.code}): ${e.message}');
     } catch (e) {
-      throw Exception('Failed to fetch posts: $e');
+      throw Exception('Failed to fetch feed posts: $e');
     }
   }
 }

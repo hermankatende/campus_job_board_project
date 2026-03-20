@@ -154,6 +154,7 @@ class JobsService {
     required String category,
     required String description,
     required String employmentType,
+    String imageUrl = '',
     String requirements = '',
   }) async {
     final data = await _api.post('/api/jobs/', {
@@ -164,6 +165,7 @@ class JobsService {
       'description': description,
       'requirements': requirements,
       'employment_type': employmentType,
+      'image_url': imageUrl,
       'status': 'open',
     });
 

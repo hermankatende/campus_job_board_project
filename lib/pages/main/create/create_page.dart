@@ -3,12 +3,12 @@
 import 'package:cjb/pages/auth/identity.dart';
 import 'package:cjb/pages/main/create/add_job.dart';
 import 'package:cjb/services/cloudinary_upload_service.dart';
+import 'package:cjb/services/jobs_service.dart';
 //import 'package:cjb/pages/main/home/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 //import 'global_variables.dart';
 
 class AddPostScreen extends StatefulWidget {
@@ -61,18 +61,25 @@ class _AddPostScreenState extends State<AddPostScreen> {
         folder: 'posts',
       );
 
-      // Get user data from global variables
-      String username = GlobalVariables().username;
-      String email = GlobalVariables().email;
+      final creator = GlobalVariables().username.trim().isNotEmpty
+          ? GlobalVariables().username.trim()
+          : 'Campus Job Board User';
+      final normalizedTitle = title.trim().isNotEmpty
+          ? title.trim()
+          : (description.length > 40
+              ? '${description.substring(0, 40)}...'
+              : description);
 
-      // Add post details to Firestore
-      await FirebaseFirestore.instance.collection('posts').add({
-        'username': username,
-        'email': email,
-        'imageUrl': imageUrl,
-        'description': description,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
+      await JobsService.instance.createJob(
+        title: normalizedTitle,
+        company: creator,
+        location: 'Remote',
+        category: 'General',
+        description: description,
+        requirements: '',
+        employmentType: 'Part-time',
+        imageUrl: imageUrl,
+      );
 
       // Clear the input fields
       _titleController.clear();
@@ -83,7 +90,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
 
       // Display a success message
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Post submitted successfully!'),
+        content: Text('Post submitted successfully to the backend!'),
         // on suceesfull posting it should navigate the user to the homepage
       ));
     } catch (e) {
