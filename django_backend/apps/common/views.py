@@ -1,6 +1,7 @@
 import json
 
 from django.db.models import Count
+from django.utils import timezone
 from rest_framework import permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -19,6 +20,8 @@ class HealthCheckView(APIView):
 
 class DashboardStatsView(APIView):
     def get(self, request):
+        online_cutoff = timezone.now() - timezone.timedelta(minutes=15)
+
         top_categories = (
             Job.objects.values("category")
             .annotate(total=Count("id"))
@@ -28,6 +31,13 @@ class DashboardStatsView(APIView):
         return Response(
             {
                 "users": UserProfile.objects.count(),
+                "active_users": UserProfile.objects.filter(last_login_at__gte=online_cutoff).count(),
+                "students": UserProfile.objects.filter(role=UserProfile.Role.STUDENT).count(),
+                "recruiters": UserProfile.objects.filter(role=UserProfile.Role.RECRUITER).count(),
+                "lecturers": UserProfile.objects.filter(role=UserProfile.Role.LECTURER).count(),
+                "pending_lecturer_verifications": UserProfile.objects.filter(
+                    role=UserProfile.Role.LECTURER, is_verified=False
+                ).count(),
                 "jobs": Job.objects.count(),
                 "open_jobs": Job.objects.filter(status=Job.Status.OPEN).count(),
                 "applications": Application.objects.count(),

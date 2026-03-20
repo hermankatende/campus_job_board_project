@@ -1,4 +1,6 @@
+from django.utils import timezone
 from rest_framework import generics, permissions
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -20,7 +22,9 @@ class MeView(APIView):
 
         if email and profile.email != email:
             profile.email = email
-            profile.save(update_fields=["email", "updated_at"])
+
+        profile.last_login_at = timezone.now()
+        profile.save(update_fields=["email", "last_login_at", "updated_at"])
 
         return Response(UserProfileSerializer(profile).data)
 
@@ -71,3 +75,111 @@ class UserProfileDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
     permission_classes = [IsAdminFromProfile]
+
+
+class UserManagementListView(APIView):
+    permission_classes = [IsAdminFromProfile]
+
+    def get(self, request):
+        search = request.query_params.get("search", "").strip()
+        role = request.query_params.get("role", "").strip().lower()
+        status = request.query_params.get("status", "").strip().lower()
+
+        queryset = UserProfile.objects.all().order_by("-updated_at")
+        if search:
+            queryset = queryset.filter(full_name__icontains=search) | queryset.filter(email__icontains=search)
+        if role:
+            queryset = queryset.filter(role=role)
+
+        online_cutoff = timezone.now() - timezone.timedelta(minutes=15)
+        if status == "online":
+            queryset = queryset.filter(last_login_at__gte=online_cutoff)
+        elif status == "offline":
+            queryset = queryset.exclude(last_login_at__gte=online_cutoff)
+
+        data = []
+        for profile in queryset:
+            is_online = bool(profile.last_login_at and profile.last_login_at >= online_cutoff)
+            data.append(
+                {
+                    "id": profile.id,
+                    "name": profile.full_name,
+                    "role": profile.role,
+                    "email": profile.email,
+                    "last_login": profile.last_login_at,
+                    "status": "online" if is_online else "offline",
+                    "is_verified": profile.is_verified,
+                    "is_suspended": profile.is_suspended,
+                }
+            )
+
+        return Response(data)
+
+
+class UserRoleUpdateView(APIView):
+    permission_classes = [IsAdminFromProfile]
+
+    def patch(self, request, pk):
+        profile = UserProfile.objects.filter(pk=pk).first()
+        if not profile:
+            raise ValidationError("User not found.")
+
+        new_role = request.data.get("role", "").strip().lower()
+        allowed_roles = {
+            UserProfile.Role.STUDENT,
+            UserProfile.Role.RECRUITER,
+            UserProfile.Role.LECTURER,
+            UserProfile.Role.ADMIN,
+        }
+        if new_role not in allowed_roles:
+            raise ValidationError("Invalid role.")
+
+        profile.role = new_role
+        profile.save(update_fields=["role", "updated_at"])
+        return Response(UserProfileSerializer(profile).data)
+
+
+class UserSuspendView(APIView):
+    permission_classes = [IsAdminFromProfile]
+
+    def patch(self, request, pk):
+        profile = UserProfile.objects.filter(pk=pk).first()
+        if not profile:
+            raise ValidationError("User not found.")
+
+        suspend = bool(request.data.get("suspend", True))
+        profile.is_suspended = suspend
+        profile.save(update_fields=["is_suspended", "updated_at"])
+        return Response(UserProfileSerializer(profile).data)
+
+
+class LecturerVerificationView(APIView):
+    permission_classes = [IsAdminFromProfile]
+
+    def patch(self, request, pk):
+        profile = UserProfile.objects.filter(pk=pk).first()
+        if not profile:
+            raise ValidationError("User not found.")
+        if profile.role != UserProfile.Role.LECTURER:
+            raise ValidationError("Target user is not a lecturer.")
+
+        verify = bool(request.data.get("verify", True))
+        profile.is_verified = verify
+        profile.save(update_fields=["is_verified", "updated_at"])
+        return Response(UserProfileSerializer(profile).data)
+
+
+class UserDeleteView(APIView):
+    permission_classes = [IsAdminFromProfile]
+
+    def delete(self, request, pk):
+        admin_uid = getattr(request, "firebase_user", {}).get("uid")
+        target = UserProfile.objects.filter(pk=pk).first()
+        if not target:
+            raise ValidationError("User not found.")
+
+        if target.firebase_uid == admin_uid:
+            raise PermissionDenied("You cannot delete your own admin profile.")
+
+        target.delete()
+        return Response({"status": "deleted"})
