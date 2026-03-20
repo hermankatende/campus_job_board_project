@@ -1,5 +1,24 @@
 import 'package:cjb/services/api_client.dart';
 
+class JobDeleteResult {
+  final int jobId;
+  final DateTime? undoExpiresAt;
+
+  const JobDeleteResult({
+    required this.jobId,
+    required this.undoExpiresAt,
+  });
+
+  factory JobDeleteResult.fromJson(Map<String, dynamic> json) {
+    return JobDeleteResult(
+      jobId: json['job_id'] ?? 0,
+      undoExpiresAt: json['undo_expires_at'] != null
+          ? DateTime.tryParse(json['undo_expires_at'])
+          : null,
+    );
+  }
+}
+
 class AppJob {
   final int id;
   final String title;
@@ -151,7 +170,16 @@ class JobsService {
     return AppJob.fromJson(data as Map<String, dynamic>);
   }
 
-  Future<void> deleteJob(int id) async {
-    await _api.delete('/api/jobs/$id/');
+  Future<JobDeleteResult> deleteJob(int id) async {
+    final data = await _api.delete('/api/jobs/$id/');
+    if (data is Map<String, dynamic>) {
+      return JobDeleteResult.fromJson(data);
+    }
+    return JobDeleteResult(jobId: id, undoExpiresAt: null);
+  }
+
+  Future<AppJob> restoreJob(int id) async {
+    final data = await _api.post('/api/jobs/$id/restore/', {});
+    return AppJob.fromJson(data as Map<String, dynamic>);
   }
 }

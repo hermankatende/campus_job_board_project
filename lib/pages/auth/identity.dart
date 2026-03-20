@@ -16,6 +16,7 @@ class GlobalVariables {
   String email = '';
   String profileImageUrl = '';
   String jobPreference = '';
+  String role = '';
 
   Future<void> loadUserData() async {
     try {
@@ -24,6 +25,7 @@ class GlobalVariables {
       email = profile.email;
       profileImageUrl = profile.imageUrl;
       jobPreference = profile.jobPreference;
+      role = profile.role;
     } catch (_) {
       // Keep previous values if profile sync fails.
     }

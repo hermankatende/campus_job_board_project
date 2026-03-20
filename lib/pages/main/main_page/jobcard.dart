@@ -457,7 +457,7 @@ class JobCard extends StatelessWidget {
   Widget _bottomNavigationItem(BuildContext context,
       {required String title, required IconData iconData}) {
     return TextButton(
-      onPressed: () {
+      onPressed: () async {
         Navigator.of(context).pop(); // Close the bottom sheet
         if (title == "Details") {
           final parsedJobId = int.tryParse(jobId) ?? 0;
@@ -514,7 +514,7 @@ class JobCard extends StatelessWidget {
             ),
           );
         } else if (title == "Delete") {
-          _deleteJobPost();
+          await _deleteJobPost(context);
         } else if (title == "Save") {
           _saveJobPost();
         }
@@ -536,10 +536,64 @@ class JobCard extends StatelessWidget {
     );
   }
 
-  void _deleteJobPost() {
+  Future<void> _deleteJobPost(BuildContext context) async {
     final jobIntId = int.tryParse(jobId);
     if (jobIntId != null) {
-      JobsService.instance.deleteJob(jobIntId);
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) {
+          return AlertDialog(
+            title: Text('Delete Job Posting?'),
+            content: Text(
+                'This action is reversible for 1 minute. Do you want to continue?'),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: Text('Cancel')),
+              ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: Text('Delete')),
+            ],
+          );
+        },
+      );
+
+      if (confirm != true) return;
+
+      try {
+        final result = await JobsService.instance.deleteJob(jobIntId);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Job deleted. You can undo within 1 minute.'),
+            duration: Duration(seconds: 60),
+            action: SnackBarAction(
+              label: 'UNDO',
+              onPressed: () async {
+                try {
+                  await JobsService.instance.restoreJob(result.jobId);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Job restored successfully.')),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Undo failed: $e')),
+                    );
+                  }
+                }
+              },
+            ),
+          ),
+        );
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Delete failed: $e')),
+          );
+        }
+      }
       return;
     }
 

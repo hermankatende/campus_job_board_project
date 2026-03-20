@@ -2,6 +2,7 @@
 
 import 'package:cjb/pages/auth/identity.dart';
 import 'package:cjb/pages/auth/sign_in_page.dart';
+import 'package:cjb/pages/main/admin/admin_dashboard_page.dart';
 import 'package:cjb/pages/main/main_page/employer/s.dart';
 import 'package:cjb/pages/main/main_page/my_applications_page.dart';
 import 'package:cjb/pages/main/main_page/savedjobs.dart';
@@ -114,6 +115,40 @@ class _DrawerWidgetState extends State<DrawerWidget> {
                   const SizedBox(
                     height: 30,
                   ),
+                  if (GlobalVariables().role == 'admin')
+                    Padding(
+                      padding: EdgeInsets.only(left: 20.0),
+                      child: Row(
+                        children: [
+                          Icon(Icons.admin_panel_settings,
+                              color: Colors.blueGrey),
+                          SizedBox(
+                            width: 4,
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => AdminDashboardPage(),
+                                ),
+                              );
+                            },
+                            child: Text(
+                              "admin dashboard",
+                              style: TextStyle(
+                                  color: cjbMediumGrey86888A,
+                                  fontSize: 25,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (GlobalVariables().role == 'admin')
+                    const SizedBox(
+                      height: 30,
+                    ),
                   Padding(
                     padding: EdgeInsets.only(left: 20.0),
                     child: Row(
