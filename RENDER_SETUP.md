@@ -8,7 +8,7 @@ This project is configured to deploy the Django backend on Render and use Supaba
 - Environment: `Python`
 - Root directory: `django_backend`
 - Build command: `pip install -r requirements.txt && python manage.py collectstatic --noinput`
-- Start command: `python manage.py migrate && gunicorn config.wsgi:application`
+- Start command: `gunicorn config.wsgi:application`
 
 ## Render Environment Variables
 
@@ -37,6 +37,20 @@ DB_PASSWORD=YOUR_ROTATED_SUPABASE_PASSWORD
 DB_HOST=db.rcdnixanccylpvpyuzpy.supabase.co
 DB_PORT=5432
 DB_SSLMODE=require
+```
+
+## First-Time Migration
+
+After environment variables are saved and the service is deployed, run this once in Render Shell:
+
+```bash
+python manage.py migrate
+```
+
+You can also create an admin account:
+
+```bash
+python manage.py createsuperuser
 ```
 
 Firebase configuration still needs one of these:

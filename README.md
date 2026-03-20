@@ -16,7 +16,7 @@ The backend is ready to deploy to Render from `django_backend/`.
 - **Environment:** Python
 - **Root Directory:** `django_backend`
 - **Build Command:** `pip install -r requirements.txt && python manage.py collectstatic --noinput`
-- **Start Command:** `python manage.py migrate && gunicorn config.wsgi:application`
+- **Start Command:** `gunicorn config.wsgi:application`
 
 ### Required Environment Variables
 
@@ -38,6 +38,7 @@ Optional but typically required for this project:
 - Supabase works well as the production PostgreSQL host.
 - Render injects `RENDER_EXTERNAL_HOSTNAME`, and the backend now accepts it automatically.
 - Static files are served with WhiteNoise.
+- Run `python manage.py migrate` once from Render Shell after setting environment variables.
 
 ## Flutter Backend URL
 
