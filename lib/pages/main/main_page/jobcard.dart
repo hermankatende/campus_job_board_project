@@ -351,7 +351,6 @@
 //     );
 //   }
 // }
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -596,32 +595,14 @@ class JobCard extends StatelessWidget {
       }
       return;
     }
-
-    // Backward compatibility for old Firestore job IDs.
-    FirebaseFirestore.instance.collection('jobs').doc(jobId).delete();
   }
 
   void _saveJobPost() async {
-    final currentUser = FirebaseAuth.instance.currentUser;
-
-    if (currentUser != null) {
-      await FirebaseFirestore.instance
-          .collection('saved_jobs')
-          .doc(currentUser.uid)
-          .collection('user_saved_jobs')
-          .doc(jobId)
-          .set({
-        'jobId': jobId,
-        'jobTitle': jobTitle,
-        'company': company,
-        'location': location,
-        'employmentType': employmentType,
-        'timestamp': timestamp,
-        'description': description,
-        'posterId': posterId,
-        'email': email,
-      });
-    }
+    final jobIntId = int.tryParse(jobId);
+    if (jobIntId == null) return;
+    try {
+      await JobsService.instance.saveJob(jobIntId);
+    } catch (_) {}
   }
 
   @override

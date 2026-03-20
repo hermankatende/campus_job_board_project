@@ -7,8 +7,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.jobs.models import Job
-from apps.jobs.serializers import JobSerializer
+from apps.jobs.models import Job, SavedJob
+from apps.jobs.serializers import JobSerializer, SavedJobSerializer
 from apps.users.models import UserProfile
 
 
@@ -169,3 +169,51 @@ class JobRestoreView(APIView):
         job.save(update_fields=["is_deleted", "deleted_at", "deleted_by", "updated_at"])
 
         return Response(JobSerializer(job).data, status=status.HTTP_200_OK)
+
+
+class SavedJobListView(APIView):
+    """GET  /api/jobs/saved/   – list saved jobs for the authenticated user.
+       POST /api/jobs/saved/   – save a job (body: {"job_id": <int>}).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def _get_profile(self, request):
+        uid = getattr(request, "firebase_user", {}).get("uid")
+        return UserProfile.objects.filter(firebase_uid=uid).first()
+
+    def get(self, request):
+        profile = self._get_profile(request)
+        if not profile:
+            return Response([], status=status.HTTP_200_OK)
+        saved = SavedJob.objects.select_related("job", "job__posted_by").filter(user=profile)
+        serializer = SavedJobSerializer(saved, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        profile = self._get_profile(request)
+        if not profile:
+            raise PermissionDenied("Profile not found.")
+        job_id = request.data.get("job_id")
+        if not job_id:
+            return Response({"detail": "job_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+        job = Job.objects.filter(pk=job_id, is_deleted=False).first()
+        if not job:
+            return Response({"detail": "Job not found."}, status=status.HTTP_404_NOT_FOUND)
+        saved, created = SavedJob.objects.get_or_create(user=profile, job=job)
+        serializer = SavedJobSerializer(saved)
+        return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+class SavedJobDeleteView(APIView):
+    """DELETE /api/jobs/saved/<job_id>/   – unsave a job."""
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, job_id):
+        uid = getattr(request, "firebase_user", {}).get("uid")
+        profile = UserProfile.objects.filter(firebase_uid=uid).first()
+        if not profile:
+            raise PermissionDenied("Profile not found.")
+        deleted_count, _ = SavedJob.objects.filter(user=profile, job_id=job_id).delete()
+        if deleted_count == 0:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(status=status.HTTP_204_NO_CONTENT)

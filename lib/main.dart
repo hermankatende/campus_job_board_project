@@ -6,7 +6,7 @@ import 'package:cjb/firebase_options.dart';
 //import 'package:cjb/pages/auth/user_pref.dart';
 import 'package:cjb/pages/main/main_page/joblist.dart';
 import 'package:cjb/pages/main/main_page/main_page.dart'; // Added import for Notification_Page
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cjb/services/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -128,10 +128,7 @@ class _MyAppState extends State<MyApp> {
       FirebaseMessaging messaging = FirebaseMessaging.instance;
       String? token = await messaging.getToken();
       if (token != null) {
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(currentUser.uid)
-            .set({'fcmToken': token}, SetOptions(merge: true));
+        await AuthService.instance.saveFcmToken(token);
         print('Stored FCM token: $token');
       } else {
         print('Failed to get FCM token');

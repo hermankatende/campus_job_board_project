@@ -1,46 +1,51 @@
 import 'package:cjb/pages/main/main_page/jobcard.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cjb/services/jobs_service.dart';
 import 'package:flutter/material.dart';
 
-class SavedJobsPage extends StatelessWidget {
+class SavedJobsPage extends StatefulWidget {
+  @override
+  State<SavedJobsPage> createState() => _SavedJobsPageState();
+}
+
+class _SavedJobsPageState extends State<SavedJobsPage> {
+  late Future<List<AppJob>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = JobsService.instance.fetchSavedJobs();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final currentUser = FirebaseAuth.instance.currentUser;
-
-    if (currentUser == null) {
-      return Center(child: Text('No user logged in'));
-    }
-
     return Scaffold(
       appBar: AppBar(
         title: Text('Saved Jobs'),
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('saved_jobs')
-            .doc(currentUser.uid)
-            .collection('user_saved_jobs')
-            .snapshots(),
+      body: FutureBuilder<List<AppJob>>(
+        future: _future,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
           }
 
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return Center(child: Text('No saved jobs found'));
+          if (snapshot.hasError) {
+            return Center(child: Text('Failed to load saved jobs'));
           }
 
-          final savedJobs = snapshot.data!.docs;
+          final savedJobs = snapshot.data ?? [];
+
+          if (savedJobs.isEmpty) {
+            return Center(child: Text('No saved jobs found'));
+          }
 
           return ListView.builder(
             itemCount: savedJobs.length,
             itemBuilder: (context, index) {
-              final jobDoc = savedJobs[index];
-              final job = jobDoc.data() as Map<String, dynamic>;
+              final job = savedJobs[index];
 
               return Dismissible(
-                key: Key(jobDoc.id),
+                key: Key(job.id.toString()),
                 direction: DismissDirection.endToStart,
                 background: Container(
                   color: Colors.red,
@@ -48,30 +53,24 @@ class SavedJobsPage extends StatelessWidget {
                   padding: EdgeInsets.symmetric(horizontal: 20.0),
                   child: Icon(Icons.delete, color: Colors.white),
                 ),
-                onDismissed: (direction) {
-                  // Delete the job from the user's saved jobs list
-                  FirebaseFirestore.instance
-                      .collection('saved_jobs')
-                      .doc(currentUser.uid)
-                      .collection('user_saved_jobs')
-                      .doc(jobDoc.id)
-                      .delete();
-
-                  // Show a snackbar to confirm deletion
+                onDismissed: (direction) async {
+                  try {
+                    await JobsService.instance.unsaveJob(job.id);
+                  } catch (_) {}
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Job removed from saved list')),
                   );
                 },
                 child: JobCard(
-                  jobId: job['jobId'],
-                  jobTitle: job['jobTitle'],
-                  company: job['company'],
-                  location: job['location'],
-                  employmentType: job['employmentType'],
-                  timestamp: job['timestamp'],
-                  description: job['description'],
-                  posterId: job['posterId'],
-                  email: job['email'],
+                  jobId: job.id.toString(),
+                  jobTitle: job.title,
+                  company: job.company,
+                  location: job.location,
+                  employmentType: job.employmentType,
+                  timestamp: job.createdAt?.toLocal().toString() ?? '',
+                  description: job.description,
+                  posterId: job.postedByUid,
+                  email: job.postedByName,
                 ),
               );
             },

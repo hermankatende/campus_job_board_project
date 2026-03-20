@@ -187,4 +187,26 @@ class JobsService {
     final data = await _api.post('/api/jobs/$id/restore/', {});
     return AppJob.fromJson(data as Map<String, dynamic>);
   }
+
+  Future<List<AppJob>> fetchSavedJobs() async {
+    final data = await _api.get('/api/jobs/saved/');
+    final items = data is List
+        ? data
+        : (data is Map && data['results'] is List
+            ? data['results'] as List
+            : []);
+    return items.map((e) {
+      final map = e as Map<String, dynamic>;
+      final jobMap = map['job'] as Map<String, dynamic>;
+      return AppJob.fromJson(jobMap);
+    }).toList();
+  }
+
+  Future<void> saveJob(int jobId) async {
+    await _api.post('/api/jobs/saved/', {'job_id': jobId});
+  }
+
+  Future<void> unsaveJob(int jobId) async {
+    await _api.delete('/api/jobs/saved/$jobId/');
+  }
 }

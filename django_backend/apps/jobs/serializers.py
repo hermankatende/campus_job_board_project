@@ -1,6 +1,18 @@
 from rest_framework import serializers
 
-from apps.jobs.models import Job
+from apps.jobs.models import Job, SavedJob
+
+
+class SavedJobSerializer(serializers.ModelSerializer):
+    job = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SavedJob
+        fields = ["id", "job", "saved_at"]
+        read_only_fields = ["id", "saved_at"]
+
+    def get_job(self, obj):
+        return JobSerializer(obj.job).data
 
 
 class JobSerializer(serializers.ModelSerializer):
