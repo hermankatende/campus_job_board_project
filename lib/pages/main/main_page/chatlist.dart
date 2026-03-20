@@ -92,11 +92,8 @@
 
 import 'package:cjb/pages/main/main_page/employer/chatscreen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 //import 'chat_screen.dart'; // Import the ChatScreen widget
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
 //import 'chat_screen.dart';
 
 class ChatListScreen extends StatelessWidget {

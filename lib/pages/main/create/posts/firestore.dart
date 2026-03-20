@@ -90,13 +90,21 @@ class FirestoreService {
         return;
       }
 
+      final backendUrl = (dotenv.env['BACKEND_URL'] ?? '').trim();
+      if (backendUrl.isEmpty) {
+        print('Missing BACKEND_URL. Skipping push endpoint registration.');
+        return;
+      }
+      final normalizedBackend = backendUrl.endsWith('/')
+          ? backendUrl.substring(0, backendUrl.length - 1)
+          : backendUrl;
+
       await pubsubClient.projects.subscriptions.create(
         pubsub.Subscription(
           name: 'projects/$_projectId/subscriptions/$_subscriptionName',
           topic: _topicName,
           pushConfig: pubsub.PushConfig(
-            pushEndpoint:
-                'https://395f-102-85-30-115.ngrok-free.app/push-endpoint',
+            pushEndpoint: '$normalizedBackend/api/common/send-notification/',
             attributes: {'category': category},
           ),
         ),

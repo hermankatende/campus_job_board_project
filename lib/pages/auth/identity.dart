@@ -1,8 +1,6 @@
 // ignore_for_file: prefer_const_constructors
 
-import 'package:cjb/pages/auth/preferences.dart';
 import 'package:cjb/pages/auth/role_details_page.dart';
-import 'package:cjb/pages/main/main_page/main_page.dart';
 import 'package:cjb/services/auth_service.dart';
 import 'package:flutter/material.dart';
 
@@ -18,6 +16,12 @@ class GlobalVariables {
   String profileImageUrl = '';
   String jobPreference = '';
   String role = '';
+  String aboutMe = '';
+  String workExperience = '';
+  String education = '';
+  String skills = '';
+  String hobbiesInterests = '';
+  String portfolioUrl = '';
 
   Future<void> loadUserData() async {
     try {
@@ -27,6 +31,12 @@ class GlobalVariables {
       profileImageUrl = profile.imageUrl;
       jobPreference = profile.jobPreference;
       role = profile.role;
+      aboutMe = profile.aboutMe;
+      workExperience = profile.workExperience;
+      education = profile.education;
+      skills = profile.skills;
+      hobbiesInterests = profile.hobbiesInterests;
+      portfolioUrl = profile.portfolioUrl;
     } catch (_) {
       // Keep previous values if profile sync fails.
     }

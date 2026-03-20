@@ -14,8 +14,7 @@ class EmployeeSearchService {
     try {
       final querySnapshot = await _firestore.collection('users').get();
       final users = querySnapshot.docs
-          .map((doc) => doc.data() as Map<String, dynamic>
-            ..['uid'] = doc.id) // Include user ID
+          .map((doc) => doc.data()..['uid'] = doc.id) // Include user ID
           .toList();
 
       final matchedUsers = <Map<String, dynamic>>[];

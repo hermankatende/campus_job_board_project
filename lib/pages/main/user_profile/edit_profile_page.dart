@@ -1,10 +1,10 @@
 // ignore_for_file: avoid_print, prefer_const_constructors, unnecessary_brace_in_string_interps, use_build_context_synchronously, avoid_function_literals_in_foreach_calls, no_leading_underscores_for_local_identifiers, use_key_in_widget_constructors, library_private_types_in_public_api, depend_on_referenced_packages
 
 import 'package:cjb/services/cloudinary_upload_service.dart';
+import 'package:cjb/services/auth_service.dart';
+import 'package:cjb/pages/auth/identity.dart';
 import 'package:flutter/material.dart';
 //import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
@@ -27,6 +27,7 @@ class _ProfileState extends State<Profile> {
   };
 
   File? _profileImage;
+  String _existingImageUrl = '';
   bool _isUploading = false;
 
   String? _selectedGender;
@@ -39,36 +40,24 @@ class _ProfileState extends State<Profile> {
   }
 
   Future<void> _initializeProfile() async {
-    print('Initializing profile...');
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-
-    if (userId == null || userId.isEmpty) {
-      print('User ID is empty');
-      return;
-    }
-
-    print('User ID: $userId');
-    await _fetchProfileData(userId);
+    await _fetchProfileData();
   }
 
-  Future<void> _fetchProfileData(String userId) async {
+  Future<void> _fetchProfileData() async {
     try {
-      final userDoc =
-          FirebaseFirestore.instance.collection('users').doc(userId);
-      final snapshot = await userDoc.get();
-
-      if (snapshot.exists) {
-        final data = snapshot.data();
-        _controllers['About me']?.text = data?['about_me'] ?? '';
-        _controllers['Work experience']?.text = data?['work_experience'] ?? '';
-        _controllers['Education']?.text = data?['education'] ?? '';
-        _controllers['Skills']?.text = data?['skills'] ?? '';
-        _controllers['Hobbies/interests']?.text =
-            data?['hobbies_interests'] ?? '';
-        _controllers['Portfolio url']?.text = data?['portfolio_url'] ?? '';
-        _controllers['job preference']?.text = data?['job_preference'] ?? '';
-        _selectedGender = data?['gender'] ?? '';
-        _selectedAgeRange = data?['age_range'] ?? '';
+      final profile = await AuthService.instance.syncProfile();
+      _controllers['About me']?.text = profile.aboutMe;
+      _controllers['Work experience']?.text = profile.workExperience;
+      _controllers['Education']?.text = profile.education;
+      _controllers['Skills']?.text = profile.skills;
+      _controllers['Hobbies/interests']?.text = profile.hobbiesInterests;
+      _controllers['Portfolio url']?.text = profile.portfolioUrl;
+      _controllers['job preference']?.text = profile.jobPreference;
+      _selectedGender = profile.gender.isNotEmpty ? profile.gender : null;
+      _selectedAgeRange = profile.ageRange.isNotEmpty ? profile.ageRange : null;
+      _existingImageUrl = profile.imageUrl;
+      if (mounted) {
+        setState(() {});
       }
     } catch (e) {
       print('Error fetching profile data: $e');
@@ -98,16 +87,6 @@ class _ProfileState extends State<Profile> {
               File('${(await getTemporaryDirectory()).path}/temp_image.jpg');
           await tempFile.writeAsBytes(compressedImage);
 
-          // Get the current user's ID
-          final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-          if (userId.isEmpty) {
-            print('User ID is empty');
-            setState(() {
-              _isUploading = false;
-            });
-            return;
-          }
-
           downloadURL = await CloudinaryUploadService.uploadFile(
             filePath: tempFile.path,
             folder: 'profile_images',
@@ -115,14 +94,8 @@ class _ProfileState extends State<Profile> {
         }
       }
 
-      print('Uploading profile data...');
-      // Save profile data to Firestore
-      final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-      final userDoc =
-          FirebaseFirestore.instance.collection('users').doc(userId);
-
-      await userDoc.set({
-        if (downloadURL != null) 'image_path': downloadURL,
+      await AuthService.instance.updateProfile({
+        if (downloadURL != null) 'image_url': downloadURL,
         'about_me': _controllers['About me']?.text,
         'work_experience': _controllers['Work experience']?.text,
         'education': _controllers['Education']?.text,
@@ -132,7 +105,10 @@ class _ProfileState extends State<Profile> {
         'job_preference': _controllers['job preference']?.text,
         'gender': _selectedGender,
         'age_range': _selectedAgeRange,
-      }, SetOptions(merge: true)); // Use merge to update existing document
+      });
+
+      await GlobalVariables().loadUserData();
+      _existingImageUrl = downloadURL ?? _existingImageUrl;
 
       setState(() {
         _isUploading = false;
@@ -197,8 +173,9 @@ class _ProfileState extends State<Profile> {
                   radius: 50,
                   backgroundImage: _profileImage != null
                       ? FileImage(_profileImage!)
-                      : NetworkImage('https://via.placeholder.com/150')
-                          as ImageProvider,
+                      : (_existingImageUrl.isNotEmpty
+                          ? NetworkImage(_existingImageUrl)
+                          : AssetImage('assets/holder.jpeg')) as ImageProvider,
                 ),
               ),
               _buildProfileListTile(

@@ -62,8 +62,8 @@ class _AddPostScreenState extends State<AddPostScreen> {
       );
 
       // Get user data from global variables
-      String username = GlobalVariables().username ?? 'Unknown User';
-      String email = GlobalVariables().email ?? 'Unknown Email';
+      String username = GlobalVariables().username;
+      String email = GlobalVariables().email;
 
       // Add post details to Firestore
       await FirebaseFirestore.instance.collection('posts').add({
