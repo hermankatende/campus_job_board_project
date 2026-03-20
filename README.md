@@ -16,15 +16,23 @@ The backend is ready to deploy to Render from `django_backend/`.
 - **Environment:** Python
 - **Root Directory:** `django_backend`
 - **Build Command:** `pip install -r requirements.txt && python manage.py collectstatic --noinput`
-- **Start Command:** `gunicorn config.wsgi:application`
+- **Start Command:** `python manage.py bootstrap_deploy && gunicorn config.wsgi:application`
 
 ### Required Environment Variables
 
 - `DJANGO_SECRET_KEY`
 - `DJANGO_DEBUG=False`
-- `DJANGO_ALLOWED_HOSTS=your-service-name.onrender.com`
-- `DJANGO_CSRF_TRUSTED_ORIGINS=https://your-service-name.onrender.com`
-- `DATABASE_URL=postgresql://...`
+- `DJANGO_ALLOWED_HOSTS=campus-job-board-project.onrender.com`
+- `DJANGO_CSRF_TRUSTED_ORIGINS=https://campus-job-board-project.onrender.com`
+- `DB_ENGINE=django.db.backends.postgresql`
+- `DB_NAME=postgres`
+- `DB_USER=postgres.<your-project-ref>`
+- `DB_PASSWORD=your-supabase-password`
+- `DB_HOST=aws-1-eu-west-1.pooler.supabase.com`
+- `DB_PORT=6543`
+- `DB_SSLMODE=require`
+- `DJANGO_SUPERUSER_USERNAME`
+- `DJANGO_SUPERUSER_PASSWORD`
 
 Optional but typically required for this project:
 
@@ -38,14 +46,14 @@ Optional but typically required for this project:
 - Supabase works well as the production PostgreSQL host.
 - Render injects `RENDER_EXTERNAL_HOSTNAME`, and the backend now accepts it automatically.
 - Static files are served with WhiteNoise.
-- Run `python manage.py migrate` once from Render Shell after setting environment variables.
+- Each deploy can run migrations and create or update a superuser through `bootstrap_deploy` when the superuser env vars are set.
 
 ## Flutter Backend URL
 
 The Flutter app reads `BACKEND_URL` from the root `.env` file, or from a compile-time define:
 
-- `.env`: `BACKEND_URL=https://campus-job-board-api.onrender.com`
-- build/run override: `--dart-define=BACKEND_URL=https://campus-job-board-api.onrender.com`
+- `.env`: `BACKEND_URL=https://campus-job-board-project.onrender.com`
+- build/run override: `--dart-define=BACKEND_URL=https://campus-job-board-project.onrender.com`
 
 An example app env file is included at `.env.example`.
 
