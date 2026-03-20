@@ -3,6 +3,7 @@
 import 'package:cjb/pages/auth/identity.dart';
 import 'package:cjb/pages/auth/sign_in_page.dart';
 import 'package:cjb/pages/main/main_page/employer/s.dart';
+import 'package:cjb/pages/main/main_page/my_applications_page.dart';
 import 'package:cjb/pages/main/main_page/savedjobs.dart';
 import 'package:cjb/pages/main/settings.dart';
 import 'package:cjb/pages/main/user_profile/profile_page.dart';
@@ -109,6 +110,38 @@ class _DrawerWidgetState extends State<DrawerWidget> {
                     width: double.infinity,
                     height: 1,
                     color: cjbLightGreyCACCCE,
+                  ),
+                  const SizedBox(
+                    height: 30,
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(left: 20.0),
+                    child: Row(
+                      children: [
+                        Icon(Icons.assignment_turned_in,
+                            color: Colors.blueGrey),
+                        SizedBox(
+                          width: 4,
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => MyApplicationsPage(),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            "my applications",
+                            style: TextStyle(
+                                color: cjbMediumGrey86888A,
+                                fontSize: 25,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(
                     height: 30,

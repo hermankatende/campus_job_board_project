@@ -13,6 +13,7 @@ import 'package:google_fonts/google_fonts.dart';
 //import 'package:intl/intl.dart';
 
 class Description extends StatelessWidget {
+  final int jobId;
   final String timestamp;
   final String jobTitle;
   final String company;
@@ -23,6 +24,7 @@ class Description extends StatelessWidget {
   final String description;
 
   Description({
+    required this.jobId,
     required this.timestamp,
     required this.jobTitle,
     required this.company,
@@ -227,7 +229,7 @@ class Description extends StatelessWidget {
                       Navigator.pushAndRemoveUntil(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => CV_page(email: email),
+                            builder: (_) => CV_page(jobId: jobId),
                           ),
                           (route) => false);
                     },

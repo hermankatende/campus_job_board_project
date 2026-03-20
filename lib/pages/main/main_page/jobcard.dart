@@ -356,6 +356,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cjb/pages/main/main_page/Uploadcv.dart';
+import 'package:cjb/pages/main/main_page/job_applications_page.dart';
 import 'package:cjb/pages/main/main_page/chat.dart';
 import 'package:cjb/pages/main/main_page/job_description.dart';
 import 'package:cjb/services/jobs_service.dart';
@@ -437,6 +438,9 @@ class JobCard extends StatelessWidget {
                 const SizedBox(height: 30),
                 if (isJobPoster) ...[
                   _bottomNavigationItem(context,
+                      title: "Applicants", iconData: Icons.people),
+                  const SizedBox(height: 30),
+                  _bottomNavigationItem(context,
                       title: "Edit", iconData: Icons.edit),
                   const SizedBox(height: 30),
                   _bottomNavigationItem(context,
@@ -456,10 +460,12 @@ class JobCard extends StatelessWidget {
       onPressed: () {
         Navigator.of(context).pop(); // Close the bottom sheet
         if (title == "Details") {
+          final parsedJobId = int.tryParse(jobId) ?? 0;
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) => Description(
+                jobId: parsedJobId,
                 jobTitle: jobTitle,
                 company: company,
                 location: location,
@@ -471,11 +477,12 @@ class JobCard extends StatelessWidget {
             ),
           );
         } else if (title == "Apply now") {
+          final parsedJobId = int.tryParse(jobId) ?? 0;
           Navigator.push(
             context,
             MaterialPageRoute(
                 builder: (_) => CV_page(
-                      email: email,
+                      jobId: parsedJobId,
                     )),
           );
         } else if (title == "Chat") {
@@ -495,6 +502,17 @@ class JobCard extends StatelessWidget {
           );
         } else if (title == "Edit") {
           // Implement edit functionality here
+        } else if (title == "Applicants") {
+          final parsedJobId = int.tryParse(jobId) ?? 0;
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => JobApplicationsPage(
+                jobId: parsedJobId,
+                jobTitle: jobTitle,
+              ),
+            ),
+          );
         } else if (title == "Delete") {
           _deleteJobPost();
         } else if (title == "Save") {
