@@ -2,8 +2,7 @@
 
 import 'package:cjb/pages/auth/identity.dart';
 import 'package:cjb/pages/main/notifications/notification_services.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cjb/services/jobs_service.dart';
 import 'package:flutter/material.dart';
 //import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -27,30 +26,12 @@ class _AddAjobState extends State<AddAjob> {
   String selectedWorkType = '';
 
   final NotificationService _notificationService = NotificationService();
+  final JobsService _jobsService = JobsService.instance;
 
   Future<void> _notifyUsers(String jobCategory) async {
-    FirebaseFirestore firestore = FirebaseFirestore.instance;
-
-    // Fetch all user documents
-    QuerySnapshot userSnapshots = await firestore.collection('users').get();
-
-    // Get the FCM tokens of users subscribed to the jobCategory
-    List<String> tokens = [];
-    for (var doc in userSnapshots.docs) {
-      Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-      List<dynamic> subscriptions = data['subscriptions'] ?? [];
-
-      if (subscriptions.contains(jobCategory)) {
-        final String? token = data['fcmToken'] as String?;
-        if (token != null) {
-          tokens.add(token);
-        }
-      }
-    }
-
-    // Notify all users with the collected tokens
-    await _notificationService.sendNotificationsToSubscribers(
-        jobCategory, tokens);
+    // Notification fan-out is now handled server-side.
+    // Keep this method to preserve current call flow.
+    await _notificationService.sendNotificationsToSubscribers(jobCategory, []);
   }
 
   @override
@@ -184,31 +165,21 @@ class _AddAjobState extends State<AddAjob> {
       return false;
     }
 
-    // Retrieve the current user's UID
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      // Show an error message if the user is not authenticated
+    try {
+      await _jobsService.createJob(
+        title: titleController.text,
+        location: locationController.text,
+        company: companyController.text,
+        employmentType: employmentTypeController.text,
+        description: descriptionController.text,
+        category: categoryController.text,
+      );
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('You need to be logged in to post a job'),
-        ),
+        SnackBar(content: Text('Failed to post job: $e')),
       );
       return false;
     }
-
-    final posterId = user.uid;
-
-    await FirebaseFirestore.instance.collection('jobs').add({
-      'title': titleController.text,
-      'location': locationController.text,
-      'company': companyController.text,
-      'employmentType': employmentTypeController.text,
-      'description': descriptionController.text,
-      'category': categoryController.text,
-      'timestamp': FieldValue.serverTimestamp(),
-      'posterId': posterId,
-      'email': GlobalVariables().email
-    });
 
     // Clear the text fields
     titleController.clear();
@@ -225,7 +196,6 @@ class _AddAjobState extends State<AddAjob> {
       ),
     );
 
-    // Navigate back or show the list of jobs
     Navigator.of(context).pop();
     return true;
   }

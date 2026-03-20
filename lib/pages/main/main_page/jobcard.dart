@@ -358,6 +358,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cjb/pages/main/main_page/Uploadcv.dart';
 import 'package:cjb/pages/main/main_page/chat.dart';
 import 'package:cjb/pages/main/main_page/job_description.dart';
+import 'package:cjb/services/jobs_service.dart';
 
 class JobCard extends StatelessWidget {
   final String jobId;
@@ -518,6 +519,13 @@ class JobCard extends StatelessWidget {
   }
 
   void _deleteJobPost() {
+    final jobIntId = int.tryParse(jobId);
+    if (jobIntId != null) {
+      JobsService.instance.deleteJob(jobIntId);
+      return;
+    }
+
+    // Backward compatibility for old Firestore job IDs.
     FirebaseFirestore.instance.collection('jobs').doc(jobId).delete();
   }
 
