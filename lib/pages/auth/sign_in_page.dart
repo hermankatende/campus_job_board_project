@@ -13,6 +13,8 @@ class SignInPage extends StatefulWidget {
 }
 
 class _SignInPageState extends State<SignInPage> {
+  static const String _adminEmail = 'hermankats16@gmail';
+  static const String _adminPassword = '12345herman';
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
@@ -40,6 +42,12 @@ class _SignInPageState extends State<SignInPage> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _loginAsSystemAdmin() async {
+    _emailController.text = _adminEmail;
+    _passwordController.text = _adminPassword;
+    await _login();
   }
 
   @override
@@ -92,8 +100,8 @@ class _SignInPageState extends State<SignInPage> {
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
                     hintText: 'Enter your email',
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 10),
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10)),
                     filled: true,
@@ -115,8 +123,8 @@ class _SignInPageState extends State<SignInPage> {
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
                     hintText: 'Enter your password',
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 10),
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10)),
                     filled: true,
@@ -166,6 +174,22 @@ class _SignInPageState extends State<SignInPage> {
                                 fontSize: 14,
                                 color: Colors.white,
                                 letterSpacing: 0.8)),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _loading ? null : _loginAsSystemAdmin,
+                    icon: const Icon(Icons.admin_panel_settings),
+                    label: const Text('SIGN IN AS SYSTEM ADMIN'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color.fromRGBO(0, 96, 243, 1),
+                      side: const BorderSide(
+                        color: Color.fromRGBO(0, 96, 243, 1),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),

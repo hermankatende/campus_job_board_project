@@ -2,6 +2,8 @@
 
 import 'package:cjb/pages/auth/identity.dart';
 import 'package:cjb/pages/auth/sign_in_page.dart';
+import 'package:cjb/services/api_client.dart';
+import 'package:cjb/services/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -38,12 +40,18 @@ class _SignUpState extends State<SignUp> {
         password: password,
       );
       await cred.user?.updateDisplayName(fullName);
+      await AuthService.instance.syncProfile();
 
       if (!mounted) return;
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => RoleSelectionPage()),
         (route) => false,
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message), backgroundColor: Colors.red),
       );
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
@@ -247,4 +255,3 @@ class _SignUpState extends State<SignUp> {
     );
   }
 }
-

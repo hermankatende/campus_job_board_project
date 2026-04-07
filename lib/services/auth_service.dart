@@ -258,9 +258,24 @@ class AuthService {
     Map<String, dynamic> profileData = const {},
   }) async {
     final body = Map<String, dynamic>.from(profileData)..['role'] = role;
-    final data = await _api.post('/api/users/onboarding/', body);
-    _profile = UserProfile.fromJson(data as Map<String, dynamic>);
-    return _profile!;
+    try {
+      await _syncProfile();
+      final data = await _api.post('/api/users/onboarding/', body);
+      _profile = UserProfile.fromJson(data as Map<String, dynamic>);
+      return _profile!;
+    } on ApiException catch (e) {
+      // Some deployments require /me/ bootstrap before onboarding is allowed.
+      if (e.statusCode == 403) {
+        await _syncProfile();
+        final retryData = await _api.post('/api/users/onboarding/', body);
+        _profile = UserProfile.fromJson(retryData as Map<String, dynamic>);
+        return _profile!;
+      }
+      if (e.statusCode == 0) {
+        throw 'Network error. Check your internet connection and backend URL.';
+      }
+      throw 'Backend error (${e.statusCode}): ${e.message}';
+    }
   }
 
   /// Saves or updates the FCM token on the backend so the user receives

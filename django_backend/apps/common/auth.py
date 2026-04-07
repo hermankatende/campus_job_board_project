@@ -8,6 +8,17 @@ from rest_framework import authentication
 from rest_framework import exceptions
 
 
+class FirebaseUser:
+    def __init__(self, decoded_token: dict):
+        self._token = decoded_token
+        self.is_authenticated = True
+        self.uid = decoded_token.get("uid")
+        self.email = decoded_token.get("email")
+
+    def __getattr__(self, name):
+        return self._token.get(name)
+
+
 class FirebaseAuthentication(authentication.BaseAuthentication):
     def authenticate(self, request):
         auth_header = request.META.get("HTTP_AUTHORIZATION", "")
@@ -26,7 +37,7 @@ class FirebaseAuthentication(authentication.BaseAuthentication):
             raise exceptions.AuthenticationFailed(f"Invalid Firebase token: {exc}") from exc
 
         request.firebase_user = decoded_token
-        return (None, decoded_token)
+        return (FirebaseUser(decoded_token), decoded_token)
 
     @staticmethod
     def _initialize_firebase_if_needed() -> None:

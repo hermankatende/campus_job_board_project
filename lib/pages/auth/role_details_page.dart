@@ -75,8 +75,9 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
       }
     } catch (error) {
       if (!mounted) return;
+      final message = error.toString().replaceFirst('Exception: ', '');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
+        SnackBar(content: Text(message)),
       );
     } finally {
       if (mounted) setState(() => _saving = false);

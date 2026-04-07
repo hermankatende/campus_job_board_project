@@ -27,27 +27,32 @@ class ApiClient {
   ApiClient._();
   static final ApiClient instance = ApiClient._();
 
+  static const String _defaultBaseUrl =
+      'https://campus-job-board-project.onrender.com';
   static const String _compileTimeBaseUrl =
       String.fromEnvironment('BACKEND_URL');
 
   // ── Base URL from --dart-define or .env ──────────────────────────────────
   String get _baseUrl {
+    final envUrl = dotenv.env['BACKEND_URL'] ?? '';
     final url = _compileTimeBaseUrl.isNotEmpty
         ? _compileTimeBaseUrl
-        : (dotenv.env['BACKEND_URL'] ?? '');
+        : (envUrl.isNotEmpty ? envUrl : _defaultBaseUrl);
     // Strip a trailing slash so we never double-up
     return url.endsWith('/') ? url.substring(0, url.length - 1) : url;
   }
 
   // ── Build headers with fresh Firebase token ───────────────────────────────
-  Future<Map<String, String>> _headers({bool auth = true}) async {
+  Future<Map<String, String>> _headers({
+    bool auth = true,
+    bool forceTokenRefresh = false,
+  }) async {
     final headers = <String, String>{'Content-Type': 'application/json'};
     if (auth) {
       try {
         final user = FirebaseAuth.instance.currentUser;
         if (user != null) {
-          // forceRefresh=false uses cached token (refreshes automatically when expired)
-          final token = await user.getIdToken(false);
+          final token = await user.getIdToken(forceTokenRefresh);
           if (token != null) headers['Authorization'] = 'Bearer $token';
         }
       } catch (e) {
@@ -59,43 +64,88 @@ class ApiClient {
 
   // ── HTTP verbs ────────────────────────────────────────────────────────────
 
+  Future<http.Response> _send(Future<http.Response> Function() request) async {
+    try {
+      return await request();
+    } catch (e) {
+      throw ApiException(
+        0,
+        'Network error. Check your internet connection and BACKEND_URL ($_baseUrl).',
+      );
+    }
+  }
+
   Future<dynamic> get(String path, {bool auth = true}) async {
     _assertConfigured();
-    final response = await http.get(
-      Uri.parse('$_baseUrl$path'),
-      headers: await _headers(auth: auth),
-    );
+    var headers = await _headers(auth: auth);
+    var response = await _send(() => http.get(
+          Uri.parse('$_baseUrl$path'),
+          headers: headers,
+        ));
+    if (auth && (response.statusCode == 401 || response.statusCode == 403)) {
+      headers = await _headers(auth: auth, forceTokenRefresh: true);
+      response = await _send(() => http.get(
+            Uri.parse('$_baseUrl$path'),
+            headers: headers,
+          ));
+    }
     return _handleResponse(response);
   }
 
   Future<dynamic> post(String path, Map<String, dynamic> body,
       {bool auth = true}) async {
     _assertConfigured();
-    final response = await http.post(
-      Uri.parse('$_baseUrl$path'),
-      headers: await _headers(auth: auth),
-      body: jsonEncode(body),
-    );
+    var headers = await _headers(auth: auth);
+    var response = await _send(() => http.post(
+          Uri.parse('$_baseUrl$path'),
+          headers: headers,
+          body: jsonEncode(body),
+        ));
+    if (auth && (response.statusCode == 401 || response.statusCode == 403)) {
+      headers = await _headers(auth: auth, forceTokenRefresh: true);
+      response = await _send(() => http.post(
+            Uri.parse('$_baseUrl$path'),
+            headers: headers,
+            body: jsonEncode(body),
+          ));
+    }
     return _handleResponse(response);
   }
 
   Future<dynamic> patch(String path, Map<String, dynamic> body,
       {bool auth = true}) async {
     _assertConfigured();
-    final response = await http.patch(
-      Uri.parse('$_baseUrl$path'),
-      headers: await _headers(auth: auth),
-      body: jsonEncode(body),
-    );
+    var headers = await _headers(auth: auth);
+    var response = await _send(() => http.patch(
+          Uri.parse('$_baseUrl$path'),
+          headers: headers,
+          body: jsonEncode(body),
+        ));
+    if (auth && (response.statusCode == 401 || response.statusCode == 403)) {
+      headers = await _headers(auth: auth, forceTokenRefresh: true);
+      response = await _send(() => http.patch(
+            Uri.parse('$_baseUrl$path'),
+            headers: headers,
+            body: jsonEncode(body),
+          ));
+    }
     return _handleResponse(response);
   }
 
   Future<dynamic> delete(String path, {bool auth = true}) async {
     _assertConfigured();
-    final response = await http.delete(
-      Uri.parse('$_baseUrl$path'),
-      headers: await _headers(auth: auth),
-    );
+    var headers = await _headers(auth: auth);
+    var response = await _send(() => http.delete(
+          Uri.parse('$_baseUrl$path'),
+          headers: headers,
+        ));
+    if (auth && (response.statusCode == 401 || response.statusCode == 403)) {
+      headers = await _headers(auth: auth, forceTokenRefresh: true);
+      response = await _send(() => http.delete(
+            Uri.parse('$_baseUrl$path'),
+            headers: headers,
+          ));
+    }
     return _handleResponse(response);
   }
 
