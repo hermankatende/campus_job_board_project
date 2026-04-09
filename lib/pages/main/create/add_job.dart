@@ -8,6 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AddAjob extends StatefulWidget {
+  final VoidCallback? onSuccess;
+
+  const AddAjob({Key? key, this.onSuccess}) : super(key: key);
+
   @override
   _AddAjobState createState() => _AddAjobState();
 }
@@ -57,12 +61,15 @@ class _AddAjobState extends State<AddAjob> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                IconButton(
-                  icon: Icon(Icons.arrow_back),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
+                if (Navigator.of(context).canPop())
+                  IconButton(
+                    icon: Icon(Icons.arrow_back),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                  )
+                else
+                  const SizedBox(width: 48),
                 Text(
                   'Post',
                   style: GoogleFonts.dmSans(
@@ -196,7 +203,14 @@ class _AddAjobState extends State<AddAjob> {
       ),
     );
 
-    Navigator.of(context).pop();
+    if (widget.onSuccess != null) {
+      widget.onSuccess!();
+      return true;
+    }
+
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
     return true;
   }
 
