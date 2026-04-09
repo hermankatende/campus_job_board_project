@@ -18,7 +18,7 @@ class _LecturerMainPageState extends State<LecturerMainPage> {
 
   final List<Widget> _pages = [
     _LecturerDashboard(),
-    AddAjob(),
+    AddAjob(onSuccess: () => setState(() => _currentIndex = 0)),
     ProfilePage(),
   ];
 
