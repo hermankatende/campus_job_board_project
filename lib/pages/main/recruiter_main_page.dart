@@ -17,7 +17,7 @@ class _RecruiterMainPageState extends State<RecruiterMainPage> {
 
   final List<Widget> _pages = [
     _RecruiterDashboard(),
-    AddAjob(),
+    AddAjob(onSuccess: () => setState(() => _currentIndex = 0)),
     ProfilePage(),
   ];
 
