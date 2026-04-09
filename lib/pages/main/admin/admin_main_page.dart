@@ -19,8 +19,6 @@ class _AdminMainPageState extends State<AdminMainPage> {
   final List<Widget> _pages = [
     AdminDashboardPage(),
     AdminUsersPage(),
-    JobsList(),
-    AddAjob(),
     ProfilePage(),
   ];
 
@@ -38,8 +36,6 @@ class _AdminMainPageState extends State<AdminMainPage> {
           BottomNavigationBarItem(
               icon: Icon(Icons.dashboard), label: 'Dashboard'),
           BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Users'),
-          BottomNavigationBarItem(icon: Icon(Icons.work), label: 'Jobs'),
-          BottomNavigationBarItem(icon: Icon(Icons.add_box), label: 'Post Job'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
