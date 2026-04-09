@@ -69,6 +69,39 @@ class _LecturerDashboardState extends State<_LecturerDashboard> {
         _jobsFuture = JobsService.instance.fetchMyJobs();
       });
 
+  Widget _actionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+          decoration: BoxDecoration(
+            color: const Color.fromRGBO(237, 244, 255, 1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE0E7FF)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 30, color: const Color.fromRGBO(0, 96, 243, 1)),
+              const SizedBox(height: 10),
+              Text(label,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF0D0140))),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -103,6 +136,56 @@ class _LecturerDashboardState extends State<_LecturerDashboard> {
                 ],
               ),
             ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Lecturer actions',
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF0D0140))),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    _actionButton(
+                      icon: Icons.add_box,
+                      label: 'Post a Job',
+                      onTap: () => setState(() => _currentIndex = 1),
+                    ),
+                    const SizedBox(width: 12),
+                    _actionButton(
+                      icon: Icons.work,
+                      label: 'My Jobs',
+                      onTap: _refresh,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    _actionButton(
+                      icon: Icons.people_outline,
+                      label: 'Applicants',
+                      onTap: _refresh,
+                    ),
+                    const SizedBox(width: 12),
+                    _actionButton(
+                      icon: Icons.person,
+                      label: 'Profile',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => ProfilePage()),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
           Expanded(
             child: FutureBuilder<List<AppJob>>(
               future: _jobsFuture,
