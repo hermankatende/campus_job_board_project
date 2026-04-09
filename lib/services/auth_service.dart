@@ -106,6 +106,68 @@ class UserProfile {
     );
   }
 
+  UserProfile copyWith({
+    int? id,
+    String? firebaseUid,
+    String? email,
+    String? fullName,
+    String? role,
+    String? phone,
+    String? imageUrl,
+    String? gender,
+    String? ageRange,
+    String? aboutMe,
+    String? skills,
+    String? portfolioUrl,
+    String? college,
+    String? program,
+    String? studentNumber,
+    String? workExperience,
+    String? education,
+    String? hobbiesInterests,
+    String? jobPreference,
+    String? resumeUrl,
+    bool? notificationsEnabled,
+    String? companyName,
+    String? companyDescription,
+    String? companyWebsite,
+    String? companyLocation,
+    String? department,
+    bool? isVerified,
+    bool? isSuspended,
+  }) {
+    return UserProfile(
+      id: id ?? this.id,
+      firebaseUid: firebaseUid ?? this.firebaseUid,
+      email: email ?? this.email,
+      fullName: fullName ?? this.fullName,
+      role: role ?? this.role,
+      phone: phone ?? this.phone,
+      imageUrl: imageUrl ?? this.imageUrl,
+      gender: gender ?? this.gender,
+      ageRange: ageRange ?? this.ageRange,
+      aboutMe: aboutMe ?? this.aboutMe,
+      skills: skills ?? this.skills,
+      portfolioUrl: portfolioUrl ?? this.portfolioUrl,
+      college: college ?? this.college,
+      program: program ?? this.program,
+      studentNumber: studentNumber ?? this.studentNumber,
+      workExperience: workExperience ?? this.workExperience,
+      education: education ?? this.education,
+      hobbiesInterests: hobbiesInterests ?? this.hobbiesInterests,
+      jobPreference: jobPreference ?? this.jobPreference,
+      resumeUrl: resumeUrl ?? this.resumeUrl,
+      notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+      companyName: companyName ?? this.companyName,
+      companyDescription: companyDescription ?? this.companyDescription,
+      companyWebsite: companyWebsite ?? this.companyWebsite,
+      companyLocation: companyLocation ?? this.companyLocation,
+      department: department ?? this.department,
+      isVerified: isVerified ?? this.isVerified,
+      isSuspended: isSuspended ?? this.isSuspended,
+    );
+  }
+
   Map<String, dynamic> toJson() => {
         'full_name': fullName,
         'phone': phone,
@@ -149,6 +211,8 @@ class UserProfile {
 class AuthService {
   AuthService._();
   static final AuthService instance = AuthService._();
+
+  static const String systemAdminEmail = 'hermankats16@gmail.com';
 
   final _firebase = FirebaseAuth.instance;
   final _api = ApiClient.instance;
@@ -241,7 +305,16 @@ class AuthService {
 
   Future<UserProfile> _syncProfile() async {
     final data = await _api.get('/api/users/me/');
-    _profile = UserProfile.fromJson(data as Map<String, dynamic>);
+    final values = Map<String, dynamic>.from(data as Map<String, dynamic>);
+    final currentEmail = _firebase.currentUser?.email?.trim().toLowerCase();
+
+    if ((values['role'] as String?)?.trim().isEmpty ?? true) {
+      if (currentEmail == systemAdminEmail) {
+        values['role'] = 'admin';
+      }
+    }
+
+    _profile = UserProfile.fromJson(values);
     return _profile!;
   }
 

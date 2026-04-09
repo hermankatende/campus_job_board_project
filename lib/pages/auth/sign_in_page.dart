@@ -13,7 +13,7 @@ class SignInPage extends StatefulWidget {
 }
 
 class _SignInPageState extends State<SignInPage> {
-  static const String _adminEmail = 'hermankats16@gmail';
+  static const String _adminEmail = 'hermankats16@gmail.com';
   static const String _adminPassword = '12345herman';
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();

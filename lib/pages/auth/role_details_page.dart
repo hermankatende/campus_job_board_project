@@ -26,6 +26,27 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
   final _companyWebsiteController = TextEditingController();
   final _companyLocationController = TextEditingController();
   final _departmentController = TextEditingController();
+
+  String? _selectedCollege;
+  String? _selectedJobPreference;
+
+  final List<String> _collegeOptions = [
+    'CHUSS',
+    'COCISS',
+    'CONAS',
+    'COBAM',
+    'CEDAT',
+    'CHS',
+    'LAW',
+  ];
+
+  final List<String> _jobPreferences = [
+    'IT',
+    'Finance',
+    'Marketing',
+    'Human Resources',
+    'Operations',
+  ];
   bool _saving = false;
 
   bool get _isStudent => widget.role == 'student';
@@ -41,10 +62,11 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
         role: widget.role,
         profileData: {
           'phone': _phoneController.text.trim(),
-          'college': _collegeController.text.trim(),
+          'college': _selectedCollege ?? _collegeController.text.trim(),
           'program': _programController.text.trim(),
           'student_number': _studentNumberController.text.trim(),
-          'job_preference': _jobPreferenceController.text.trim(),
+          'job_preference':
+              _selectedJobPreference ?? _jobPreferenceController.text.trim(),
           'company_name': _companyNameController.text.trim(),
           'company_description': _companyDescriptionController.text.trim(),
           'company_website': _companyWebsiteController.text.trim(),
@@ -111,11 +133,35 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
             children: [
               _input(_phoneController, 'Phone number'),
               if (_isStudent) ...[
-                _input(_collegeController, 'College', required: true),
+                _dropdown(
+                  value: _selectedCollege,
+                  label: 'College',
+                  items: _collegeOptions,
+                  onChanged: (value) =>
+                      setState(() => _selectedCollege = value),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'College is required';
+                    }
+                    return null;
+                  },
+                ),
                 _input(_programController, 'Program', required: true),
                 _input(_studentNumberController, 'Student number',
                     required: true),
-                _input(_jobPreferenceController, 'Job preference'),
+                _dropdown(
+                  value: _selectedJobPreference,
+                  label: 'Job preference',
+                  items: _jobPreferences,
+                  onChanged: (value) =>
+                      setState(() => _selectedJobPreference = value),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Job preference is required';
+                    }
+                    return null;
+                  },
+                ),
               ],
               if (_isRecruiter) ...[
                 _input(_companyNameController, 'Company name', required: true),
@@ -171,6 +217,35 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
             borderRadius: BorderRadius.circular(10),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _dropdown({
+    required String? value,
+    required String label,
+    required List<String> items,
+    required void Function(String?) onChanged,
+    String? Function(String?)? validator,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: DropdownButtonFormField<String>(
+        value: value,
+        decoration: InputDecoration(
+          labelText: label,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        validator: validator,
+        items: items
+            .map((item) => DropdownMenuItem(
+                  value: item,
+                  child: Text(item),
+                ))
+            .toList(),
+        onChanged: onChanged,
       ),
     );
   }
