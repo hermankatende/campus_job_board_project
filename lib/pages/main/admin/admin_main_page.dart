@@ -1,8 +1,6 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 import 'package:cjb/pages/main/admin/admin_dashboard_page.dart';
 import 'package:cjb/pages/main/admin/admin_users_page.dart';
-import 'package:cjb/pages/main/create/add_job.dart';
-import 'package:cjb/pages/main/main_page/joblist.dart';
 import 'package:cjb/pages/main/user_profile/profile_page.dart';
 import 'package:flutter/material.dart';
 
@@ -15,13 +13,47 @@ class AdminMainPage extends StatefulWidget {
 
 class _AdminMainPageState extends State<AdminMainPage> {
   int _currentIndex = 0;
+  late final List<Widget> _pages;
 
-  final List<Widget> _pages = [
-    AdminDashboardPage(),
-    AdminUsersPage(),
-    AddAjob(onSuccess: () => setState(() => _currentIndex = 0)),
-    ProfilePage(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      AdminDashboardPage(),
+      AdminUsersPage(),
+      _buildAnalyticsPage(),
+      ProfilePage(),
+    ];
+  }
+
+  Widget _buildAnalyticsPage() {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Analytics & Reports'),
+        backgroundColor: const Color.fromRGBO(0, 96, 243, 1),
+        foregroundColor: Colors.white,
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.analytics_outlined, size: 64, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
+              'Analytics Dashboard',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Advanced reporting and analytics features\ncoming soon...',
+              style: TextStyle(color: Colors.grey, fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +69,8 @@ class _AdminMainPageState extends State<AdminMainPage> {
           BottomNavigationBarItem(
               icon: Icon(Icons.dashboard), label: 'Dashboard'),
           BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Users'),
-          BottomNavigationBarItem(icon: Icon(Icons.add_box), label: 'Post Job'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.analytics), label: 'Analytics'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),

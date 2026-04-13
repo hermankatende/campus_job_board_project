@@ -15,12 +15,17 @@ class LecturerMainPage extends StatefulWidget {
 
 class _LecturerMainPageState extends State<LecturerMainPage> {
   int _currentIndex = 0;
+  late final List<Widget> _pages;
 
-  final List<Widget> _pages = [
-    _LecturerDashboard(),
-    AddAjob(onSuccess: () => setState(() => _currentIndex = 0)),
-    ProfilePage(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      _LecturerDashboard(onPostJobTap: () => setState(() => _currentIndex = 1)),
+      AddAjob(onSuccess: () => setState(() => _currentIndex = 0)),
+      ProfilePage(),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +49,10 @@ class _LecturerMainPageState extends State<LecturerMainPage> {
 }
 
 class _LecturerDashboard extends StatefulWidget {
+  final VoidCallback onPostJobTap;
+
+  const _LecturerDashboard({required this.onPostJobTap});
+
   @override
   State<_LecturerDashboard> createState() => _LecturerDashboardState();
 }
@@ -152,7 +161,7 @@ class _LecturerDashboardState extends State<_LecturerDashboard> {
                     _actionButton(
                       icon: Icons.add_box,
                       label: 'Post a Job',
-                      onTap: () => setState(() => _currentIndex = 1),
+                      onTap: widget.onPostJobTap,
                     ),
                     const SizedBox(width: 12),
                     _actionButton(
