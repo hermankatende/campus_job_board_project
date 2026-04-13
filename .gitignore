@@ -51,5 +51,5 @@ assets/*.json
 .env
 .env.local
 lib/**/firebase_credentials.dart
-.vscode
-.node_modules
+.vscode/
+node_modules/
