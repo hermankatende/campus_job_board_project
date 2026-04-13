@@ -1,5 +1,6 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
+import 'package:cjb/pages/app_router.dart';
 import 'package:cjb/pages/auth/identity.dart';
 import 'package:cjb/pages/auth/sign_in_page.dart';
 import 'package:cjb/services/api_client.dart';
@@ -41,13 +42,22 @@ class _SignUpState extends State<SignUp> {
       );
       await cred.user?.updateDisplayName(fullName);
       await AuthService.instance.syncProfile();
+      final profile = AuthService.instance.currentProfile;
 
       if (!mounted) return;
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => RoleSelectionPage()),
-        (route) => false,
-      );
+      if (profile?.isAdmin == true) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => homePageForProfile(profile!)),
+          (route) => false,
+        );
+      } else {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => RoleSelectionPage()),
+          (route) => false,
+        );
+      }
     } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

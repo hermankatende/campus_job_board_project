@@ -53,26 +53,46 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
   bool get _isRecruiter => widget.role == 'recruiter';
   bool get _isLecturer => widget.role == 'lecturer';
 
+  String _normalizeUrl(String url) {
+    final trimmed = url.trim();
+    if (trimmed.isEmpty) return '';
+    final lower = trimmed.toLowerCase();
+    if (lower.startsWith('http://') || lower.startsWith('https://')) {
+      return trimmed;
+    }
+    return 'https://$trimmed';
+  }
+
+  bool _isValidUrl(String value) {
+    final normalized = _normalizeUrl(value);
+    final uri = Uri.tryParse(normalized);
+    return uri != null && uri.hasScheme && uri.host.isNotEmpty;
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _saving = true);
     try {
+      final companyWebsite = _normalizeUrl(_companyWebsiteController.text);
+      final profileData = {
+        'phone': _phoneController.text.trim(),
+        'college': _selectedCollege ?? _collegeController.text.trim(),
+        'program': _programController.text.trim(),
+        'student_number': _studentNumberController.text.trim(),
+        'job_preference':
+            _selectedJobPreference ?? _jobPreferenceController.text.trim(),
+        'company_name': _companyNameController.text.trim(),
+        'company_description': _companyDescriptionController.text.trim(),
+        'company_location': _companyLocationController.text.trim(),
+        'department': _departmentController.text.trim(),
+      };
+      if (companyWebsite.isNotEmpty) {
+        profileData['company_website'] = companyWebsite;
+      }
       final profile = await AuthService.instance.completeOnboarding(
         role: widget.role,
-        profileData: {
-          'phone': _phoneController.text.trim(),
-          'college': _selectedCollege ?? _collegeController.text.trim(),
-          'program': _programController.text.trim(),
-          'student_number': _studentNumberController.text.trim(),
-          'job_preference':
-              _selectedJobPreference ?? _jobPreferenceController.text.trim(),
-          'company_name': _companyNameController.text.trim(),
-          'company_description': _companyDescriptionController.text.trim(),
-          'company_website': _companyWebsiteController.text.trim(),
-          'company_location': _companyLocationController.text.trim(),
-          'department': _departmentController.text.trim(),
-        },
+        profileData: profileData,
       );
 
       if (!mounted) return;
@@ -167,7 +187,19 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
                 _input(_companyNameController, 'Company name', required: true),
                 _input(_companyDescriptionController, 'Company description',
                     maxLines: 4),
-                _input(_companyWebsiteController, 'Company website'),
+                _input(
+                  _companyWebsiteController,
+                  'Company website',
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return null;
+                    }
+                    if (!_isValidUrl(value)) {
+                      return 'Enter a valid URL';
+                    }
+                    return null;
+                  },
+                ),
                 _input(_companyLocationController, 'Company location'),
               ],
               if (_isLecturer) ...[
@@ -199,6 +231,7 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
     String label, {
     bool required = false,
     int maxLines = 1,
+    String? Function(String?)? validator,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -208,6 +241,9 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
         validator: (value) {
           if (required && (value == null || value.trim().isEmpty)) {
             return '$label is required';
+          }
+          if (validator != null) {
+            return validator(value);
           }
           return null;
         },

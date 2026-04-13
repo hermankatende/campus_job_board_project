@@ -311,6 +311,14 @@ class AuthService {
     if ((values['role'] as String?)?.trim().isEmpty ?? true) {
       if (currentEmail == systemAdminEmail) {
         values['role'] = 'admin';
+      } else if (currentEmail?.contains('recruiter') ?? false) {
+        values['role'] = 'recruiter';
+      } else if (currentEmail?.contains('lecturer') ?? false) {
+        values['role'] = 'lecturer';
+      } else if (currentEmail?.contains('admin') ?? false) {
+        values['role'] = 'admin';
+      } else {
+        values['role'] = 'student';
       }
     }
 
