@@ -63,14 +63,7 @@ class Description extends StatelessWidget {
                     IconButton(
                       icon: Icon(Icons.arrow_back, color: Colors.black),
                       onPressed: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => MainPage(
-                                firstName: '',
-                                first_Name: '',
-                              ),
-                            ));
+                        Navigator.pop(context);
                       },
                     ),
                     Center(

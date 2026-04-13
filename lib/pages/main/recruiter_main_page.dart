@@ -15,8 +15,8 @@ class RecruiterMainPage extends StatefulWidget {
 class _RecruiterMainPageState extends State<RecruiterMainPage> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = [
-    _RecruiterDashboard(),
+  late final List<Widget> _pages = [
+    _RecruiterDashboard(onPostJobTap: () => setState(() => _currentIndex = 1)),
     AddAjob(onSuccess: () => setState(() => _currentIndex = 0)),
     ProfilePage(),
   ];
@@ -43,6 +43,10 @@ class _RecruiterMainPageState extends State<RecruiterMainPage> {
 }
 
 class _RecruiterDashboard extends StatefulWidget {
+  final VoidCallback onPostJobTap;
+
+  const _RecruiterDashboard({required this.onPostJobTap});
+
   @override
   State<_RecruiterDashboard> createState() => _RecruiterDashboardState();
 }
@@ -107,7 +111,7 @@ class _RecruiterDashboardState extends State<_RecruiterDashboard> {
                       style: TextStyle(color: Colors.grey)),
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
-                    onPressed: () {},
+                    onPressed: widget.onPostJobTap,
                     icon: const Icon(Icons.add),
                     label: const Text('Post a Job'),
                     style: ElevatedButton.styleFrom(

@@ -252,22 +252,24 @@ class _AddPostScreenState extends State<AddPostScreen> {
                       children: [
                         Row(
                           children: [
-                            Column(
-                              children: [
-                                IconButton(
-                                  icon: Icon(Icons.business_center_rounded),
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => AddAjob(),
-                                      ),
-                                    );
-                                  },
-                                ),
-                                Text('Job'),
-                              ],
-                            ),
+                            if (GlobalVariables().role == 'recruiter' ||
+                                GlobalVariables().role == 'lecturer')
+                              Column(
+                                children: [
+                                  IconButton(
+                                    icon: Icon(Icons.business_center_rounded),
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => AddAjob(),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  Text('Job'),
+                                ],
+                              ),
                             Column(
                               children: [
                                 IconButton(
