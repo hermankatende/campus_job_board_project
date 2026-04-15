@@ -4,7 +4,6 @@
 import 'package:cjb/pages/main/main_page/Uploadcv.dart';
 //import 'package:cjb/pages/main/main_page/jobcard.dart';
 //import 'package:cjb/pages/main/main_page/joblist.dart';
-import 'package:cjb/pages/main/main_page/main_page.dart';
 import 'package:flutter/material.dart';
 //import 'dart:ui';
 //import 'package:flutter_svg/flutter_svg.dart';
