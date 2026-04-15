@@ -1,273 +1,327 @@
-// ignore_for_file: prefer_const_literals_to_create_immutables, prefer_const_constructors, use_key_in_widget_constructors, unnecessary_string_interpolations, unnecessary_brace_in_string_interps
+// ignore_for_file: prefer_const_constructors, use_build_context_synchronously
 
-//import 'package:cjb/pages/main/home/home_page.dart';
-import 'package:cjb/pages/main/main_page/Uploadcv.dart';
-//import 'package:cjb/pages/main/main_page/jobcard.dart';
-//import 'package:cjb/pages/main/main_page/joblist.dart';
 import 'package:flutter/material.dart';
-//import 'dart:ui';
-//import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-//import 'package:googleapis/homegraph/v1.dart';
-//import 'package:intl/intl.dart';
+import 'package:cjb/pages/main/main_page/apply_page.dart';
 
-class Description extends StatelessWidget {
+class JobDescription extends StatefulWidget {
   final int jobId;
-  final String timestamp;
   final String jobTitle;
   final String company;
   final String location;
   final String employmentType;
-  final String email;
-
   final String description;
+  final String requirements;
+  final String postedByName;
+  final String imageUrl;
 
-  Description({
+  const JobDescription({
     required this.jobId,
-    required this.timestamp,
     required this.jobTitle,
     required this.company,
     required this.location,
     required this.employmentType,
-    required this.email,
     required this.description,
+    required this.requirements,
+    required this.postedByName,
+    required this.imageUrl,
   });
 
-  // Convert Firestore Timestamp to DateTime
-  // DateTime date = location.toDate();
-  // // Format DateTime to display only the date
-  // String formattedDate = DateFormat.yMMMd().format(date);
+  @override
+  State<JobDescription> createState() => _JobDescriptionState();
+}
+
+class _JobDescriptionState extends State<JobDescription> {
+  bool _isSaved = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SingleChildScrollView(
-        child: Container(
-          decoration: BoxDecoration(
-            color: Color(0xFFF9F9F9),
-            borderRadius: BorderRadius.circular(30),
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.white,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(
+              _isSaved ? Icons.bookmark : Icons.bookmark_border,
+              color: _isSaved ? Colors.blue : Colors.black,
+            ),
+            onPressed: () {
+              setState(() => _isSaved = !_isSaved);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    _isSaved ? 'Job saved' : 'Job removed from saved',
+                    style: GoogleFonts.poppins(),
+                  ),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
           ),
-          padding: EdgeInsets.fromLTRB(0, 33, 0, 27),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Positioned Image
-              Container(
-                margin: EdgeInsets.fromLTRB(22.8, 0, 30, 0.5),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.arrow_back, color: Colors.black),
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
+        ],
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Company Header Section
+            Container(
+              color: Colors.white,
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Company Logo/Image
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.grey[200],
                     ),
-                    Center(
-                      child: Container(
+                    child: widget.imageUrl.isNotEmpty
+                        ? Image.network(
+                            widget.imageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Icon(Icons.business,
+                                size: 40, color: Colors.grey),
+                          )
+                        : Icon(Icons.business, size: 40, color: Colors.grey),
+                  ),
+                  SizedBox(height: 16),
+
+                  // Job Title
+                  Text(
+                    widget.jobTitle,
+                    style: GoogleFonts.poppins(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+
+                  // Company Name
+                  Text(
+                    widget.company,
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                  SizedBox(height: 12),
+
+                  // Job Meta Info
+                  Row(
+                    children: [
+                      Container(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Color(0xFFAFECFE),
-                          borderRadius: BorderRadius.circular(30),
+                          color: Colors.blue[50],
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                        padding: EdgeInsets.all(14.7),
-                        child: CircleAvatar(
-                          backgroundImage: AssetImage('assets/holder.jpeg'),
-                          radius: 30,
+                        child: Text(
+                          widget.employmentType,
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.blue[700],
+                          ),
                         ),
                       ),
-                    ),
-                    Icon(Icons.more_vert, color: Colors.black),
-                  ],
-                ),
-              ),
-              Container(
-                margin: EdgeInsets.fromLTRB(0, 0, 0, 62),
-                child: Container(
-                  padding: EdgeInsets.fromLTRB(0, 25, 0, 0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Color(0xFFF3F2F2),
-                    ),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: Container(
-                        padding: EdgeInsets.fromLTRB(29, 20, 31.3, 21),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.center,
+                      SizedBox(width: 8),
+                      Container(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.green[50],
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
                           children: [
-                            Container(
-                              margin: EdgeInsets.fromLTRB(2.3, 0, 0, 16),
-                              child: Text(
-                                "${jobTitle}",
-                                style: GoogleFonts.getFont(
-                                  'DM Sans',
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 16,
-                                  color: Color(0xFF150B3D),
-                                ),
+                            Icon(Icons.location_on,
+                                size: 12, color: Colors.green[700]),
+                            SizedBox(width: 4),
+                            Text(
+                              widget.location,
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.green[700],
                               ),
-                            ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('lctn:'),
-                                _buildTag(location),
-                                Text(' Pstd:'),
-                                _buildTag(timestamp)
-                              ],
                             ),
                           ],
                         ),
                       ),
-                    ),
-                  ),
-                ),
-              ),
-              Row(
-                children: [Text('Company Name: '), _buildTag(company)],
-              ),
-              SizedBox(
-                height: 20,
-              ),
-              Row(
-                children: [Text('WorkType: '), _buildTag(employmentType)],
-              ),
-              SizedBox(
-                height: 20,
-              ),
-              Row(
-                children: [
-                  Text('Employment Type: '),
-                  _buildTag(employmentType)
-                ],
-              ),
-              SizedBox(
-                height: 20,
-              ),
-              Container(
-                margin: EdgeInsets.fromLTRB(20, 0, 20, 25),
-                child: Align(
-                  alignment: Alignment.topLeft,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        margin: EdgeInsets.fromLTRB(0, 0, 0, 15),
-                        child: Align(
-                          alignment: Alignment.topLeft,
-                          child: Text(
-                            'Job Description',
-                            style: GoogleFonts.getFont(
-                              'Open Sans',
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                              color: Color(0xFF150B3D),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Container(
-                        margin: EdgeInsets.fromLTRB(0, 0, 0, 10),
-                        child: Text(
-                          '${description} ...',
-                          style: GoogleFonts.getFont(
-                            'Open Sans',
-                            fontWeight: FontWeight.w400,
-                            fontSize: 12,
-                            color: Color(0xFF524B6B),
-                          ),
-                        ),
-                      ),
-                      Align(
-                        alignment: Alignment.topLeft,
-                        child: Opacity(
-                          opacity: 0.8,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Color(0xFF7551FF),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            padding: EdgeInsets.fromLTRB(15, 7, 14.8, 7),
-                            child: Text(
-                              'Read more',
-                              style: GoogleFonts.getFont(
-                                'Open Sans',
-                                fontWeight: FontWeight.w400,
-                                fontSize: 12,
-                                color: Color(0xFF0D0140),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
                     ],
                   ),
-                ),
+                ],
               ),
-              Container(
-                decoration: BoxDecoration(
-                  color: Color(0xFF7551FF),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                margin: EdgeInsets.fromLTRB(26, 0, 25, 0),
-                child: Center(
-                  child: TextButton(
-                    onPressed: () {
-                      Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => CV_page(jobId: jobId),
-                          ),
-                          (route) => false);
-                    },
-                    style: TextButton.styleFrom(
-                      padding:
-                          EdgeInsets.symmetric(vertical: 15, horizontal: 100),
+            ),
+
+            SizedBox(height: 8),
+            Divider(height: 1),
+
+            // Job Details
+            Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // About the Job Section
+                  if (widget.description.isNotEmpty) ...[
+                    _buildSection(
+                      title: 'About This Job',
+                      content: widget.description,
                     ),
-                    child: Text(
-                      'Apply Now',
-                      style: GoogleFonts.getFont(
-                        'DM Sans',
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        color: Color(0xFFFFFFFF),
-                      ),
+                    SizedBox(height: 24),
+                  ],
+
+                  // Requirements Section
+                  if (widget.requirements.isNotEmpty) ...[
+                    _buildSection(
+                      title: 'Requirements',
+                      content: widget.requirements,
+                    ),
+                    SizedBox(height: 24),
+                  ],
+
+                  // Posted By
+                  Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey[200]!),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Posted by',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          widget.postedByName,
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: Container(
+        padding: EdgeInsets.all(16) +
+            EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom),
+        child: ElevatedButton.icon(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ApplyPage(jobId: widget.jobId),
+              ),
+            );
+          },
+          icon: Icon(Icons.send, size: 18),
+          label: Text(
+            'Apply Now',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue,
+            foregroundColor: Colors.white,
+            padding: EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildTag(String text) {
-    return Opacity(
-      opacity: 0.8,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Color(0xFFCBC9D4),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        padding: EdgeInsets.symmetric(vertical: 6, horizontal: 10),
-        child: Center(
-          child: Text(
-            text,
-            style: GoogleFonts.dmSans(
-              fontWeight: FontWeight.bold,
-              fontSize: 10,
-              color: Color(0xFF524B6B),
-            ),
+  Widget _buildSection({
+    required String title,
+    required String content,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
           ),
         ),
-      ),
+        SizedBox(height: 12),
+        Text(
+          content,
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            height: 1.6,
+            color: Colors.grey[700],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// Deprecated class for backwards compatibility
+class Description extends StatelessWidget {
+  final int jobId;
+  final String jobTitle;
+  final String company;
+  final String location;
+  final String employmentType;
+  final String description;
+
+  Description({
+    required this.jobId,
+    required this.jobTitle,
+    required this.company,
+    required this.location,
+    required this.employmentType,
+    required this.description,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return JobDescription(
+      jobId: jobId,
+      jobTitle: jobTitle,
+      company: company,
+      location: location,
+      employmentType: employmentType,
+      description: description,
+      requirements: '',
+      postedByName: '',
+      imageUrl: '',
     );
   }
 }

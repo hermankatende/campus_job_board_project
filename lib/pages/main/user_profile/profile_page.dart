@@ -1,209 +1,376 @@
-// ignore_for_file: library_private_types_in_public_api, use_key_in_widget_constructors, prefer_const_constructors, avoid_unnecessary_containers, use_super_parameters
+// ignore_for_file: prefer_const_constructors
 
-import 'package:cjb/pages/auth/identity.dart';
-import 'package:cjb/pages/main/home/home_page.dart';
 import 'package:cjb/pages/main/user_profile/edit_profile_page.dart';
-
-import 'package:cjb/pages/main/user_profile/widget/appbar_widget.dart';
-import 'package:cjb/pages/main/user_profile/widget/button_widget.dart';
-//import 'package:cjb/pages/main/user_profile/widget/profile_widget.dart';
+import 'package:cjb/services/auth_service.dart';
 import 'package:flutter/material.dart';
-// import 'package:image_picker/image_picker.dart';
-// import 'package:firebase_storage/firebase_storage.dart';
-// import 'package:cloud_firestore/cloud_firestore.dart';
-// import 'package:firebase_core/firebase_core.dart';
-// import 'package:path/path.dart' as path;
-
-// import '../../auth/user_pref.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class ProfilePage extends StatefulWidget {
+  const ProfilePage({super.key});
+
   @override
-  _ProfilePageState createState() => _ProfilePageState();
+  State<ProfilePage> createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  late Future<UserProfile> _profileFuture;
+
   @override
   void initState() {
     super.initState();
-    _loadUserData();
-  }
-
-  Future<void> _loadUserData() async {
-    await GlobalVariables().loadUserData();
-    setState(() {});
+    _profileFuture = AuthService.instance.syncProfile();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: buildAppBar(context),
-      body: ListView(
-        physics: BouncingScrollPhysics(),
-        children: [
-          ProfileWidget(
-            imagePath: GlobalVariables().profileImageUrl.isNotEmpty
-                ? GlobalVariables().profileImageUrl
-                : 'assets/holder.jpeg',
-            onClicked: () async {
-              Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => HomePage()),
-                  (route) => false);
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.white,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'My Profile',
+          style: GoogleFonts.poppins(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: Colors.black,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.edit, color: Colors.blue),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => Profile()),
+              ).then((_) {
+                setState(() {
+                  _profileFuture = AuthService.instance.syncProfile();
+                });
+              });
             },
           ),
-          const SizedBox(height: 24),
-          buildName(),
-          const SizedBox(height: 24),
-          Center(child: buildUpgradeButton()),
-          const SizedBox(height: 24),
-          buildAbout(),
+        ],
+      ),
+      body: FutureBuilder<UserProfile>(
+        future: _profileFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  SizedBox(height: 16),
+                  Text(
+                    'Failed to load profile',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final profile = snapshot.data!;
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                Container(
+                  color: Colors.white,
+                  padding: EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.grey[200],
+                          border: Border.all(color: Colors.blue, width: 3),
+                        ),
+                        child: profile.imageUrl.isNotEmpty
+                            ? ClipOval(
+                                child: Image.network(
+                                  profile.imageUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Icon(
+                                      Icons.person,
+                                      size: 50,
+                                      color: Colors.grey),
+                                ),
+                              )
+                            : Icon(Icons.person, size: 50, color: Colors.grey),
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        profile.fullName,
+                        style: GoogleFonts.poppins(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        profile.email,
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 8),
+                if (profile.college.isNotEmpty || profile.program.isNotEmpty)
+                  _buildSection(
+                    title: 'Academic Information',
+                    children: [
+                      _buildInfoRow('College', profile.college),
+                      _buildDivider(),
+                      _buildInfoRow('Program', profile.program),
+                      if (profile.studentNumber.isNotEmpty) ...[
+                        _buildDivider(),
+                        _buildInfoRow('Student Number', profile.studentNumber),
+                      ],
+                    ],
+                  ),
+                if (profile.skills.isNotEmpty ||
+                    profile.aboutMe.isNotEmpty ||
+                    profile.workExperience.isNotEmpty)
+                  _buildSection(
+                    title: 'Professional Information',
+                    children: [
+                      if (profile.aboutMe.isNotEmpty) ...[
+                        _buildTitleValue('About Me', profile.aboutMe),
+                        _buildDivider(),
+                      ],
+                      if (profile.skills.isNotEmpty) ...[
+                        _buildTitleValue('Skills', profile.skills),
+                        _buildDivider(),
+                      ],
+                      if (profile.workExperience.isNotEmpty)
+                        _buildTitleValue(
+                            'Work Experience', profile.workExperience),
+                    ],
+                  ),
+                if (profile.portfolioUrl.isNotEmpty)
+                  _buildSection(
+                    title: 'Portfolio & Links',
+                    children: [
+                      _buildLinkRow('Portfolio', profile.portfolioUrl),
+                    ],
+                  ),
+                if (profile.jobPreference.isNotEmpty)
+                  _buildSection(
+                    title: 'Job Preference',
+                    children: [
+                      _buildInfoRow('Preference', profile.jobPreference),
+                    ],
+                  ),
+                if (profile.resumeUrl.isNotEmpty)
+                  _buildSection(
+                    title: 'Resume',
+                    children: [
+                      Container(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.blue[50],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.description, color: Colors.blue),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Resume Uploaded',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                  SizedBox(height: 2),
+                                  Text(
+                                    'Your professional resume is ready',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      color: Colors.blue[700],
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(Icons.check_circle,
+                                color: Colors.green, size: 24),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                SizedBox(height: 20),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSection({
+    required String title,
+    required List<Widget> children,
+  }) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              title,
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+              ),
+            ),
+          ),
+          ...children,
         ],
       ),
     );
   }
 
-  Widget buildName() => Column(
-        children: [
-          Text(
-            GlobalVariables().username,
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            GlobalVariables().email,
-            style: TextStyle(color: Colors.grey),
-          )
-        ],
-      );
-
-  Widget buildUpgradeButton() => ButtonWidget(
-        text: 'Edit profile',
-        onClicked: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => Profile()),
-          );
-        },
-      );
-
-  Widget buildAbout() => Container(
-        padding: EdgeInsets.symmetric(horizontal: 48),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Text(
-                'About',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-            ),
-            const SizedBox(height: 16),
-            buildInfoRow('About me: ', GlobalVariables().aboutMe),
-            const SizedBox(height: 16),
-            buildInfoRow('Work experience: ', GlobalVariables().workExperience),
-            const SizedBox(height: 16),
-            buildInfoRow('Education: ', GlobalVariables().education),
-            const SizedBox(height: 16),
-            buildInfoRow('Skills: ', GlobalVariables().skills),
-            const SizedBox(height: 16),
-            buildInfoRow(
-                'Hobbies/interests: ', GlobalVariables().hobbiesInterests),
-            const SizedBox(height: 16),
-            buildInfoRow('Portfolio: ', GlobalVariables().portfolioUrl),
-            const SizedBox(height: 16),
-            buildInfoRow('Job preference: ', GlobalVariables().jobPreference),
-          ],
-        ),
-      );
-
-  Widget buildInfoRow(String label, String value) => Row(
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             label,
-            style: TextStyle(
-                fontWeight: FontWeight.bold, fontSize: 16, height: 1.4),
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
           ),
+          SizedBox(width: 16),
           Expanded(
-            child: Container(
-              child:
-                  Text(value.isNotEmpty ? value : 'Information not available'),
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+              ),
             ),
           ),
         ],
-      );
-}
+      ),
+    );
+  }
 
-class ProfileWidget extends StatelessWidget {
-  final String imagePath;
-  final VoidCallback onClicked;
-
-  const ProfileWidget({
-    Key? key,
-    required this.imagePath,
-    required this.onClicked,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.primary;
-
-    return Center(
-      child: Stack(
+  Widget _buildTitleValue(String title, String value) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          buildImage(),
-          Positioned(
-            bottom: 0,
-            right: 4,
-            child: buildEditIcon(color),
+          Text(
+            title,
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          SizedBox(height: 6),
+          Container(
+            padding: EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              value,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: Colors.grey[800],
+                height: 1.5,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget buildImage() {
-    final image = imagePath.contains('http')
-        ? NetworkImage(imagePath)
-        : AssetImage(imagePath) as ImageProvider;
-
-    return ClipOval(
-      child: Material(
-        color: Colors.transparent,
-        child: Ink.image(
-          image: image,
-          fit: BoxFit.cover,
-          width: 128,
-          height: 128,
-          child: InkWell(onTap: onClicked),
-        ),
+  Widget _buildLinkRow(String label, String url) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.blue[50],
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.open_in_new, size: 14, color: Colors.blue),
+                SizedBox(width: 4),
+                Text(
+                  'Visit',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.blue,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget buildEditIcon(Color color) => buildCircle(
-        color: Colors.white,
-        all: 3,
-        child: buildCircle(
-          color: color,
-          all: 8,
-          child: Icon(
-            Icons.edit,
-            color: Colors.white,
-            size: 20,
-          ),
-        ),
-      );
-
-  Widget buildCircle({
-    required Widget child,
-    required double all,
-    required Color color,
-  }) =>
-      ClipOval(
-        child: Container(
-          padding: EdgeInsets.all(all),
-          color: color,
-          child: child,
-        ),
-      );
+  Widget _buildDivider() => Divider(height: 1, indent: 16, endIndent: 16);
 }

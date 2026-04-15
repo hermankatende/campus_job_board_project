@@ -463,15 +463,16 @@ class JobCard extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => Description(
+              builder: (_) => JobDescription(
                 jobId: parsedJobId,
                 jobTitle: jobTitle,
                 company: company,
                 location: location,
                 employmentType: employmentType,
-                timestamp: timestamp,
                 description: description,
-                email: email,
+                requirements: '',
+                postedByName: '',
+                imageUrl: '',
               ),
             ),
           );
