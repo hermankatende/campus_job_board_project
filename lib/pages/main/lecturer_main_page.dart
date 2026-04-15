@@ -1,5 +1,6 @@
-// ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
+import 'package:cjb/pages/auth/sign_in_page.dart';
 import 'package:cjb/pages/main/create/add_job.dart';
+import 'package:cjb/pages/main/create/picker.dart';
 import 'package:cjb/pages/main/main_page/job_applications_page.dart';
 import 'package:cjb/pages/main/user_profile/profile_page.dart';
 import 'package:cjb/services/auth_service.dart';
@@ -78,37 +79,34 @@ class _LecturerDashboardState extends State<_LecturerDashboard> {
         _jobsFuture = JobsService.instance.fetchMyJobs();
       });
 
-  Widget _actionButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
-          decoration: BoxDecoration(
-            color: const Color.fromRGBO(237, 244, 255, 1),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE0E7FF)),
+  Future<void> _logout() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Logout'),
+        content: Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel'),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 30, color: const Color.fromRGBO(0, 96, 243, 1)),
-              const SizedBox(height: 10),
-              Text(label,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF0D0140))),
-            ],
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Logout'),
           ),
-        ),
+        ],
       ),
     );
+
+    if (confirm == true) {
+      await AuthService.instance.signOut();
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => SignInPage()),
+        (route) => false,
+      );
+    }
   }
 
   @override
@@ -119,12 +117,21 @@ class _LecturerDashboardState extends State<_LecturerDashboard> {
         backgroundColor: const Color.fromRGBO(0, 96, 243, 1),
         foregroundColor: Colors.white,
         actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _refresh),
+          IconButton(
+            onPressed: _refresh,
+            icon: Icon(Icons.refresh),
+            tooltip: 'Refresh',
+          ),
+          IconButton(
+            onPressed: _logout,
+            icon: Icon(Icons.logout),
+            tooltip: 'Logout',
+          ),
         ],
       ),
       body: Column(
         children: [
-          // Verification status banner
+          // Verification status banner - only for lecturers
           if (_profile != null && !_profile!.isVerified)
             Container(
               width: double.infinity,
@@ -145,187 +152,294 @@ class _LecturerDashboardState extends State<_LecturerDashboard> {
                 ],
               ),
             ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Lecturer actions',
-                    style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF0D0140))),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    _actionButton(
-                      icon: Icons.add_box,
-                      label: 'Post a Job',
-                      onTap: widget.onPostJobTap,
-                    ),
-                    const SizedBox(width: 12),
-                    _actionButton(
-                      icon: Icons.work,
-                      label: 'My Jobs',
-                      onTap: _refresh,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    _actionButton(
-                      icon: Icons.people_outline,
-                      label: 'Applicants',
-                      onTap: _refresh,
-                    ),
-                    const SizedBox(width: 12),
-                    _actionButton(
-                      icon: Icons.person,
-                      label: 'Profile',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => ProfilePage()),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
           Expanded(
-            child: FutureBuilder<List<AppJob>>(
-              future: _jobsFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.error_outline,
-                            size: 48, color: Colors.red),
-                        const SizedBox(height: 12),
-                        Text('${snapshot.error}',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.red)),
-                        const SizedBox(height: 12),
-                        ElevatedButton(
-                            onPressed: _refresh, child: const Text('Retry')),
-                      ],
-                    ),
-                  );
-                }
-                final jobs = snapshot.data ?? [];
-                if (jobs.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.work_off_outlined,
-                            size: 64, color: Colors.grey),
-                        const SizedBox(height: 12),
-                        const Text('No jobs posted yet.',
-                            style: TextStyle(color: Colors.grey)),
-                      ],
-                    ),
-                  );
-                }
-                return RefreshIndicator(
-                  onRefresh: () async => _refresh(),
-                  child: ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: jobs.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final job = jobs[index];
-                      return _LecturerJobCard(job: job, onRefresh: _refresh);
-                    },
-                  ),
-                );
-              },
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Welcome Section
+                  _buildWelcomeSection(),
+
+                  const SizedBox(height: 24),
+
+                  // Quick Actions Section
+                  _buildSectionHeader('Quick Actions'),
+                  const SizedBox(height: 16),
+                  _buildQuickActions(),
+
+                  const SizedBox(height: 24),
+
+                  // My Jobs Section
+                  _buildSectionHeader('My Job Postings'),
+                  const SizedBox(height: 16),
+                  _buildJobsSection(),
+                ],
+              ),
             ),
           ),
         ],
       ),
     );
   }
-}
 
-class _LecturerJobCard extends StatelessWidget {
-  final AppJob job;
-  final VoidCallback onRefresh;
-
-  const _LecturerJobCard({required this.job, required this.onRefresh});
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildWelcomeSection() {
     return Card(
-      elevation: 2,
+      elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Expanded(
-                  child: Text(job.title,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 16)),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: job.status == 'open'
-                        ? Colors.green.shade100
-                        : Colors.red.shade100,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    job.status.toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: job.status == 'open'
-                          ? Colors.green.shade700
-                          : Colors.red.shade700,
-                    ),
+                Icon(Icons.school,
+                    color: Color.fromRGBO(0, 96, 243, 1), size: 28),
+                SizedBox(width: 12),
+                Text(
+                  'Welcome, ${_profile?.fullName ?? 'Lecturer'}',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0D0140),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            Text('${job.company} • ${job.location}',
-                style: const TextStyle(color: Colors.grey, fontSize: 13)),
-            Text(job.employmentType,
-                style: const TextStyle(color: Colors.grey, fontSize: 12)),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.people_outline),
-                label: const Text('View Applicants'),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => JobApplicationsPage(
-                          jobId: job.id, jobTitle: job.title),
-                    ),
-                  ).then((_) => onRefresh());
-                },
+            SizedBox(height: 8),
+            Text(
+              'Manage your job postings and track applications from students.',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 14,
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: Color(0xFF0D0140),
+      ),
+    );
+  }
+
+  Widget _buildQuickActions() {
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+      children: [
+        _actionCard(
+          'Post New Job',
+          Icons.add_box,
+          Colors.blue,
+          widget.onPostJobTap,
+        ),
+        _actionCard(
+          'Create Post',
+          Icons.post_add,
+          Colors.green,
+          () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => CreatePostPage()),
+          ),
+        ),
+        _actionCard(
+          'My Profile',
+          Icons.person,
+          Colors.orange,
+          () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => ProfilePage()),
+          ),
+        ),
+        _actionCard(
+          'Job Analytics',
+          Icons.analytics,
+          Colors.purple,
+          () => ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Analytics feature coming soon')),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _actionCard(
+      String title, IconData icon, Color color, VoidCallback onTap) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 32, color: color),
+              SizedBox(height: 12),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF0D0140),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildJobsSection() {
+    return FutureBuilder<List<AppJob>>(
+      future: _jobsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+        if (snapshot.hasError) {
+          return Card(
+            elevation: 4,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  SizedBox(height: 12),
+                  Text(
+                    'Failed to load jobs',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    '${snapshot.error}',
+                    style: TextStyle(color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: _refresh,
+                    child: Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final jobs = snapshot.data ?? [];
+        if (jobs.isEmpty) {
+          return Card(
+            elevation: 4,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: Column(
+                children: [
+                  Icon(Icons.work_outline, size: 48, color: Colors.grey),
+                  SizedBox(height: 12),
+                  Text(
+                    'No job postings yet',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Create your first job posting to get started',
+                    style: TextStyle(color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    icon: Icon(Icons.add),
+                    label: Text('Post Your First Job'),
+                    onPressed: widget.onPostJobTap,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromRGBO(0, 96, 243, 1),
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return ListView.separated(
+          shrinkWrap: true,
+          physics: NeverScrollableScrollPhysics(),
+          itemCount: jobs.length,
+          separatorBuilder: (_, __) => SizedBox(height: 8),
+          itemBuilder: (context, index) {
+            final job = jobs[index];
+            return Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+              child: ListTile(
+                title: Text(
+                  job.title,
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(
+                  '${job.company} • ${job.location}',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+                trailing: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: job.status == 'open'
+                        ? Colors.green.withValues(alpha: 0.1)
+                        : Colors.grey.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    job.status == 'open' ? 'Active' : 'Inactive',
+                    style: TextStyle(
+                      color: job.status == 'open' ? Colors.green : Colors.grey,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                onTap: () {
+                  // Navigate to job details/applications
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => JobApplicationsPage(
+                            jobId: job.id, jobTitle: job.title)),
+                  );
+                },
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
