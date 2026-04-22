@@ -172,12 +172,59 @@ class _JobApplicationsPageState extends State<JobApplicationsPage> {
                     separatorBuilder: (_, __) => Divider(height: 1),
                     itemBuilder: (context, index) {
                       final app = apps[index];
+                      final hasResume = app.resumeUrl.trim().isNotEmpty;
+
                       return ListTile(
                         title: Text(app.applicantName.isEmpty
                             ? 'Unnamed Applicant'
                             : app.applicantName),
-                        subtitle: Text(
-                            'Program: ${app.applicantProgram.isEmpty ? 'N/A' : app.applicantProgram} • Status: ${app.status}'),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Program: ${app.applicantProgram.isEmpty ? 'N/A' : app.applicantProgram} • Status: ${app.status}',
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              app.applicantEmail.isEmpty
+                                  ? 'Email: N/A'
+                                  : 'Email: ${app.applicantEmail}',
+                            ),
+                            const SizedBox(height: 6),
+                            Wrap(
+                              spacing: 8,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                Text(
+                                  hasResume ? 'CV uploaded' : 'No CV uploaded',
+                                  style: TextStyle(
+                                    color:
+                                        hasResume ? Colors.green : Colors.red,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                if (hasResume)
+                                  TextButton.icon(
+                                    onPressed: () => _openResume(app.resumeUrl),
+                                    icon:
+                                        const Icon(Icons.attach_file, size: 16),
+                                    label: const Text('View CV'),
+                                    style: TextButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 0,
+                                      ),
+                                      minimumSize: const Size(0, 32),
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        isThreeLine: true,
                         trailing: PopupMenuButton<String>(
                           onSelected: (value) {
                             _changeStatus(app, value);
@@ -195,11 +242,8 @@ class _JobApplicationsPageState extends State<JobApplicationsPage> {
                                 child: Text('Reset to Applied')),
                           ],
                         ),
-                        onTap: () {
-                          if (app.resumeUrl.isNotEmpty) {
-                            _openResume(app.resumeUrl);
-                          }
-                        },
+                        onTap:
+                            hasResume ? () => _openResume(app.resumeUrl) : null,
                       );
                     },
                   ),
