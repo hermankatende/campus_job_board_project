@@ -312,6 +312,17 @@ class AuthService {
 
     if (currentEmail == systemAdminEmail) {
       values['role'] = 'admin';
+      if ((data['role'] as String?)?.toLowerCase() != 'admin') {
+        try {
+          final patched = await _api.patch('/api/users/me/', {'role': 'admin'});
+          values
+            ..clear()
+            ..addAll(
+                Map<String, dynamic>.from(patched as Map<String, dynamic>));
+        } catch (_) {
+          // Keep local role fallback if backend patch fails.
+        }
+      }
     } else if ((values['role'] as String?)?.trim().isEmpty ?? true) {
       if (currentEmail?.contains('recruiter') ?? false) {
         values['role'] = 'recruiter';

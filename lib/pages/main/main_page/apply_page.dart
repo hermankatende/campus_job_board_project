@@ -102,7 +102,6 @@ class _ApplyPageState extends State<ApplyPage> {
         filePath: _selectedFile!.path,
         resourceType: 'raw',
         folder: 'resumes',
-        accessMode: 'public',
       );
 
       final application = await _appService.applyToJob(

@@ -121,11 +121,11 @@ class _RecruiterDashboardState extends State<_RecruiterDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: _buildDrawer(),
       appBar: AppBar(
         title: const Text('Recruiter Dashboard'),
         backgroundColor: const Color.fromRGBO(0, 96, 243, 1),
         foregroundColor: Colors.white,
-        drawer: _buildDrawer(),
         actions: [
           IconButton(
             onPressed: _refresh,

@@ -8,7 +8,6 @@ class CloudinaryUploadService {
     required String filePath,
     String resourceType = 'auto',
     String? folder,
-    String? accessMode,
     String? uploadPreset,
   }) async {
     final cloudName = dotenv.env['CLOUDINARY_CLOUD_NAME']?.trim() ?? '';
@@ -37,10 +36,6 @@ class CloudinaryUploadService {
 
     if (folder != null && folder.trim().isNotEmpty) {
       request.fields['folder'] = folder.trim();
-    }
-
-    if (accessMode != null && accessMode.trim().isNotEmpty) {
-      request.fields['access_mode'] = accessMode.trim();
     }
 
     final streamed = await request.send();
