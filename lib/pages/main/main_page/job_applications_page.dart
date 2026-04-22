@@ -2,7 +2,6 @@
 
 import 'package:cjb/services/applications_service.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 
 class JobApplicationsPage extends StatefulWidget {
@@ -62,9 +61,6 @@ class _JobApplicationsPageState extends State<JobApplicationsPage> {
       final uri = Uri.tryParse(candidate);
       if (uri == null) continue;
 
-      final isReachable = await _isReachable(uri);
-      if (!isReachable) continue;
-
       final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (opened) return;
     }
@@ -85,11 +81,8 @@ class _JobApplicationsPageState extends State<JobApplicationsPage> {
     final lower = trimmed.toLowerCase();
 
     final isCloudinary = lower.contains('res.cloudinary.com');
-    final isDocument = lower.endsWith('.pdf') ||
-        lower.endsWith('.doc') ||
-        lower.endsWith('.docx');
 
-    if (isCloudinary && isDocument) {
+    if (isCloudinary) {
       if (trimmed.contains('/image/upload/')) {
         candidates.add(trimmed.replaceFirst('/image/upload/', '/raw/upload/'));
       }
@@ -103,16 +96,6 @@ class _JobApplicationsPageState extends State<JobApplicationsPage> {
     }
 
     return candidates.toSet().toList();
-  }
-
-  Future<bool> _isReachable(Uri uri) async {
-    try {
-      final response = await http.get(uri,
-          headers: {'Range': 'bytes=0-0'}).timeout(const Duration(seconds: 12));
-      return response.statusCode >= 200 && response.statusCode < 400;
-    } catch (_) {
-      return false;
-    }
   }
 
   @override

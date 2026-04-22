@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'package:cjb/services/applications_service.dart';
+import 'package:cjb/services/auth_service.dart';
 import 'package:cjb/services/cloudinary_upload_service.dart';
 
 class ApplyPage extends StatefulWidget {
@@ -103,6 +104,14 @@ class _ApplyPageState extends State<ApplyPage> {
         resourceType: 'raw',
         folder: 'resumes',
       );
+
+      // Keep resume on profile as a fallback so posters can still access CV
+      // even if older application records miss resume_url.
+      try {
+        await AuthService.instance.updateProfile({'resume_url': uploadedUrl});
+      } catch (_) {
+        // Do not block submission if profile resume update fails.
+      }
 
       final application = await _appService.applyToJob(
         jobId: widget.jobId,
