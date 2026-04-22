@@ -45,9 +45,23 @@ class _SignInPageState extends State<SignInPage> {
   }
 
   Future<void> _loginAsSystemAdmin() async {
-    _emailController.text = _adminEmail;
-    _passwordController.text = _adminPassword;
-    await _login();
+    if (_loading) return;
+    setState(() => _loading = true);
+    try {
+      final profile = await AuthService.instance.signIn(
+        _adminEmail,
+        _adminPassword,
+      );
+      if (!mounted) return;
+      navigateToHome(context, profile);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString()), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
