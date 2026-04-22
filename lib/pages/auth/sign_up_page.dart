@@ -5,7 +5,6 @@ import 'package:cjb/pages/auth/identity.dart';
 import 'package:cjb/pages/auth/sign_in_page.dart';
 import 'package:cjb/services/api_client.dart';
 import 'package:cjb/services/auth_service.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -36,11 +35,11 @@ class _SignUpState extends State<SignUp> {
 
     setState(() => _loading = true);
     try {
-      final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      await AuthService.instance.registerAccount(
         email: email,
         password: password,
+        fullName: fullName,
       );
-      await cred.user?.updateDisplayName(fullName);
       await AuthService.instance.syncProfile();
       final profile = AuthService.instance.currentProfile;
 
@@ -63,24 +62,13 @@ class _SignUpState extends State<SignUp> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message), backgroundColor: Colors.red),
       );
-    } on FirebaseAuthException catch (e) {
+    } catch (e) {
       if (!mounted) return;
-      String msg;
-      switch (e.code) {
-        case 'email-already-in-use':
-          msg = 'An account with this email already exists.';
-          break;
-        case 'weak-password':
-          msg = 'Password must be at least 6 characters.';
-          break;
-        case 'invalid-email':
-          msg = 'Please enter a valid email address.';
-          break;
-        default:
-          msg = e.message ?? 'Registration failed. Please try again.';
-      }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       if (mounted) setState(() => _loading = false);

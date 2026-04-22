@@ -309,6 +309,24 @@ class AuthService {
     final data = await _api.get('/api/users/me/');
     final values = Map<String, dynamic>.from(data as Map<String, dynamic>);
     final currentEmail = _firebase.currentUser?.email?.trim().toLowerCase();
+    final firebaseDisplayName =
+        _firebase.currentUser?.displayName?.trim() ?? '';
+
+    if ((values['full_name'] as String?)?.trim().isEmpty ?? true) {
+      if (firebaseDisplayName.isNotEmpty) {
+        values['full_name'] = firebaseDisplayName;
+        try {
+          final patched = await _api
+              .patch('/api/users/me/', {'full_name': firebaseDisplayName});
+          values
+            ..clear()
+            ..addAll(
+                Map<String, dynamic>.from(patched as Map<String, dynamic>));
+        } catch (_) {
+          // Keep local fallback name if backend patch fails.
+        }
+      }
+    }
 
     if (currentEmail == systemAdminEmail) {
       values['role'] = 'admin';

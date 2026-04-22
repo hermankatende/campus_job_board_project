@@ -103,8 +103,8 @@ class _ProfileState extends State<Profile> {
         'hobbies_interests': _controllers['Hobbies/interests']?.text,
         'portfolio_url': _controllers['Portfolio url']?.text,
         'job_preference': _controllers['job preference']?.text,
-        'gender': _selectedGender,
-        'age_range': _selectedAgeRange,
+        'gender': _selectedGender ?? '',
+        'age_range': _selectedAgeRange ?? '',
       });
 
       await GlobalVariables().loadUserData();
@@ -120,8 +120,9 @@ class _ProfileState extends State<Profile> {
       setState(() {
         _isUploading = false;
       });
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Failed to Upload Profile')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to upload profile: $e')),
+      );
     }
   }
 
@@ -227,7 +228,7 @@ class _ProfileState extends State<Profile> {
               ),
               SizedBox(height: 20),
               ElevatedButton(
-                onPressed: _uploadProfile,
+                onPressed: _isUploading ? null : _uploadProfile,
                 child: Text('Upload Profile'),
               ),
               if (_isUploading)
