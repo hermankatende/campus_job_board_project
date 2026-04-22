@@ -3,7 +3,6 @@
 import 'package:cjb/pages/auth/identity.dart';
 import 'package:cjb/pages/auth/sign_in_page.dart';
 import 'package:cjb/pages/main/admin/admin_dashboard_page.dart';
-import 'package:cjb/pages/main/main_page/employer/s.dart';
 import 'package:cjb/pages/main/main_page/my_applications_page.dart';
 import 'package:cjb/pages/main/main_page/savedjobs.dart';
 import 'package:cjb/pages/main/settings.dart';
@@ -241,36 +240,6 @@ class _DrawerWidgetState extends State<DrawerWidget> {
                           ),
                         ),
                       ],
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 30,
-                  ),
-                  Padding(
-                    padding: EdgeInsets.only(left: 20.0),
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => EmployeeSearchPage()));
-                      },
-                      child: Row(
-                        children: [
-                          Icon(Icons.emoji_people_rounded,
-                              color: Colors.blueGrey),
-                          SizedBox(
-                            width: 4,
-                          ),
-                          Text(
-                            "find employee",
-                            style: TextStyle(
-                                color: cjbMediumGrey86888A,
-                                fontSize: 25,
-                                fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
                     ),
                   ),
                   const SizedBox(

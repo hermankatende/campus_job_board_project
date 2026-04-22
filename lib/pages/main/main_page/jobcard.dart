@@ -354,7 +354,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cjb/pages/main/main_page/Uploadcv.dart';
+import 'package:cjb/pages/main/main_page/apply_page.dart';
 import 'package:cjb/pages/main/main_page/job_applications_page.dart';
 import 'package:cjb/pages/main/main_page/chat.dart';
 import 'package:cjb/pages/main/main_page/job_description.dart';
@@ -481,9 +481,8 @@ class JobCard extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-                builder: (_) => CV_page(
-                      jobId: parsedJobId,
-                    )),
+              builder: (_) => ApplyPage(jobId: parsedJobId),
+            ),
           );
         } else if (title == "Chat") {
           final currentUser = FirebaseAuth.instance.currentUser;
@@ -516,7 +515,7 @@ class JobCard extends StatelessWidget {
         } else if (title == "Delete") {
           await _deleteJobPost(context);
         } else if (title == "Save") {
-          _saveJobPost();
+          _saveJobPost(context);
         }
       },
       child: Row(
@@ -598,12 +597,23 @@ class JobCard extends StatelessWidget {
     }
   }
 
-  void _saveJobPost() async {
+  void _saveJobPost(BuildContext context) async {
     final jobIntId = int.tryParse(jobId);
     if (jobIntId == null) return;
     try {
       await JobsService.instance.saveJob(jobIntId);
-    } catch (_) {}
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Job saved successfully.')),
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save job: $error')),
+        );
+      }
+    }
   }
 
   @override

@@ -2,6 +2,7 @@
 
 import 'package:cjb/services/applications_service.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 
 class JobApplicationsPage extends StatefulWidget {
@@ -54,26 +55,64 @@ class _JobApplicationsPageState extends State<JobApplicationsPage> {
     }
   }
 
-  Future<void> _deleteApplication(JobApplication app) async {
-    try {
-      await ApplicationsService.instance.deleteApplication(app.id);
-      if (!mounted) return;
-      setState(_reload);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Application deleted.')),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Delete failed: $error')),
-      );
+  Future<void> _openResume(String url) async {
+    final candidates = _resumeUrlCandidates(url);
+
+    for (final candidate in candidates) {
+      final uri = Uri.tryParse(candidate);
+      if (uri == null) continue;
+
+      final isReachable = await _isReachable(uri);
+      if (!isReachable) continue;
+
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (opened) return;
     }
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Unable to open this resume link. Please ask the applicant to re-upload the CV.',
+        ),
+      ),
+    );
   }
 
-  Future<void> _openResume(String url) async {
-    final uri = Uri.tryParse(url);
-    if (uri == null) return;
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  List<String> _resumeUrlCandidates(String url) {
+    final trimmed = url.trim();
+    final candidates = <String>[trimmed];
+    final lower = trimmed.toLowerCase();
+
+    final isCloudinary = lower.contains('res.cloudinary.com');
+    final isDocument = lower.endsWith('.pdf') ||
+        lower.endsWith('.doc') ||
+        lower.endsWith('.docx');
+
+    if (isCloudinary && isDocument) {
+      if (trimmed.contains('/image/upload/')) {
+        candidates.add(trimmed.replaceFirst('/image/upload/', '/raw/upload/'));
+      }
+      if (trimmed.contains('/raw/upload/')) {
+        candidates.add(trimmed.replaceFirst('/raw/upload/', '/image/upload/'));
+      }
+      if (trimmed.contains('/upload/')) {
+        candidates
+            .add(trimmed.replaceFirst('/upload/', '/upload/fl_attachment/'));
+      }
+    }
+
+    return candidates.toSet().toList();
+  }
+
+  Future<bool> _isReachable(Uri uri) async {
+    try {
+      final response = await http.get(uri,
+          headers: {'Range': 'bytes=0-0'}).timeout(const Duration(seconds: 12));
+      return response.statusCode >= 200 && response.statusCode < 400;
+    } catch (_) {
+      return false;
+    }
   }
 
   @override
@@ -141,11 +180,7 @@ class _JobApplicationsPageState extends State<JobApplicationsPage> {
                             'Program: ${app.applicantProgram.isEmpty ? 'N/A' : app.applicantProgram} • Status: ${app.status}'),
                         trailing: PopupMenuButton<String>(
                           onSelected: (value) {
-                            if (value == 'delete') {
-                              _deleteApplication(app);
-                            } else {
-                              _changeStatus(app, value);
-                            }
+                            _changeStatus(app, value);
                           },
                           itemBuilder: (_) => [
                             PopupMenuItem(
@@ -158,9 +193,6 @@ class _JobApplicationsPageState extends State<JobApplicationsPage> {
                             PopupMenuItem(
                                 value: 'applied',
                                 child: Text('Reset to Applied')),
-                            PopupMenuItem(
-                                value: 'delete',
-                                child: Text('Delete Application')),
                           ],
                         ),
                         onTap: () {

@@ -24,6 +24,21 @@
 			],
 			"isBackground": false,
 			"group": "build"
+		},
+		{
+			"label": "Build Flutter APK",
+			"type": "shell",
+			"command": "flutter",
+			"args": [
+				"build",
+				"apk",
+				"--release"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
 		}
 	]
 }

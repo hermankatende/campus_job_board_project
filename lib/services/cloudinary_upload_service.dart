@@ -8,13 +8,22 @@ class CloudinaryUploadService {
     required String filePath,
     String resourceType = 'auto',
     String? folder,
+    String? accessMode,
+    String? uploadPreset,
   }) async {
     final cloudName = dotenv.env['CLOUDINARY_CLOUD_NAME']?.trim() ?? '';
-    final uploadPreset = dotenv.env['CLOUDINARY_UPLOAD_PRESET']?.trim() ?? '';
+    final defaultPreset = dotenv.env['CLOUDINARY_UPLOAD_PRESET']?.trim() ?? '';
+    final resumePreset =
+        dotenv.env['CLOUDINARY_RESUME_UPLOAD_PRESET']?.trim() ?? '';
+    final effectivePreset = uploadPreset?.trim().isNotEmpty == true
+        ? uploadPreset!.trim()
+        : (folder?.trim().toLowerCase() == 'resumes' && resumePreset.isNotEmpty
+            ? resumePreset
+            : defaultPreset);
 
-    if (cloudName.isEmpty || uploadPreset.isEmpty) {
+    if (cloudName.isEmpty || effectivePreset.isEmpty) {
       throw Exception(
-        'Missing Cloudinary configuration. Set CLOUDINARY_CLOUD_NAME and CLOUDINARY_UPLOAD_PRESET in .env.',
+        'Missing Cloudinary configuration. Set CLOUDINARY_CLOUD_NAME and CLOUDINARY_UPLOAD_PRESET in .env (or CLOUDINARY_RESUME_UPLOAD_PRESET for resume uploads).',
       );
     }
 
@@ -23,11 +32,15 @@ class CloudinaryUploadService {
     );
 
     final request = http.MultipartRequest('POST', uri)
-      ..fields['upload_preset'] = uploadPreset
+      ..fields['upload_preset'] = effectivePreset
       ..files.add(await http.MultipartFile.fromPath('file', filePath));
 
     if (folder != null && folder.trim().isNotEmpty) {
       request.fields['folder'] = folder.trim();
+    }
+
+    if (accessMode != null && accessMode.trim().isNotEmpty) {
+      request.fields['access_mode'] = accessMode.trim();
     }
 
     final streamed = await request.send();

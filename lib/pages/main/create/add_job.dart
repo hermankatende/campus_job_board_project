@@ -1,9 +1,13 @@
 // ignore_for_file: use_key_in_widget_constructors, library_private_types_in_public_api, unnecessary_null_comparison, prefer_const_constructors, unnecessary_string_interpolations, unnecessary_brace_in_string_interps, use_build_context_synchronously, avoid_unnecessary_containers
 
+import 'dart:io';
+
 import 'package:cjb/pages/auth/identity.dart';
 import 'package:cjb/pages/main/notifications/notification_services.dart';
+import 'package:cjb/services/cloudinary_upload_service.dart';
 import 'package:cjb/services/jobs_service.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 //import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -31,6 +35,10 @@ class _AddAjobState extends State<AddAjob> {
 
   final NotificationService _notificationService = NotificationService();
   final JobsService _jobsService = JobsService.instance;
+  final ImagePicker _imagePicker = ImagePicker();
+
+  File? _selectedImage;
+  bool _isPosting = false;
 
   Future<void> _notifyUsers(String jobCategory) async {
     // Notification fan-out is now handled server-side.
@@ -47,6 +55,39 @@ class _AddAjobState extends State<AddAjob> {
   Future<void> _loadUserData() async {
     await GlobalVariables().loadUserData();
     setState(() {});
+  }
+
+  Future<void> _pickPostImage() async {
+    try {
+      final file = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
+
+      if (file == null || !mounted) {
+        return;
+      }
+
+      setState(() {
+        _selectedImage = File(file.path);
+      });
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to pick image: $error')),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    titleController.dispose();
+    locationController.dispose();
+    companyController.dispose();
+    employmentTypeController.dispose();
+    descriptionController.dispose();
+    categoryController.dispose();
+    super.dispose();
   }
 
   @override
@@ -123,16 +164,20 @@ class _AddAjobState extends State<AddAjob> {
                   'rectangle_5928_x2.svg',
                   descriptionController,
                 ),
+                SizedBox(height: 30),
+                _buildImagePicker(),
               ],
             ),
             SizedBox(height: 30),
             ElevatedButton(
-              onPressed: () async {
-                final bool posted = await postJob();
-                if (posted) {
-                  await _notifyUsers(selectedCategory);
-                }
-              },
+              onPressed: _isPosting
+                  ? null
+                  : () async {
+                      final bool posted = await postJob();
+                      if (posted) {
+                        await _notifyUsers(selectedCategory);
+                      }
+                    },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Color(0xFFFF9228),
                 shape: RoundedRectangleBorder(
@@ -140,14 +185,23 @@ class _AddAjobState extends State<AddAjob> {
                 ),
                 padding: EdgeInsets.symmetric(vertical: 20, horizontal: 40),
               ),
-              child: Text(
-                'Post Job',
-                style: GoogleFonts.dmSans(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                  color: Colors.white,
-                ),
-              ),
+              child: _isPosting
+                  ? SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Text(
+                      'Post Job',
+                      style: GoogleFonts.dmSans(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        color: Colors.white,
+                      ),
+                    ),
             ),
             SizedBox(height: 30),
           ],
@@ -157,6 +211,8 @@ class _AddAjobState extends State<AddAjob> {
   }
 
   Future<bool> postJob() async {
+    if (_isPosting) return false;
+
     if (titleController.text.isEmpty ||
         locationController.text.isEmpty ||
         companyController.text.isEmpty ||
@@ -172,7 +228,18 @@ class _AddAjobState extends State<AddAjob> {
       return false;
     }
 
+    setState(() => _isPosting = true);
+
     try {
+      String imageUrl = '';
+      if (_selectedImage != null) {
+        imageUrl = await CloudinaryUploadService.uploadFile(
+          filePath: _selectedImage!.path,
+          resourceType: 'image',
+          folder: 'job-posts',
+        );
+      }
+
       await _jobsService.createJob(
         title: titleController.text,
         location: locationController.text,
@@ -180,11 +247,13 @@ class _AddAjobState extends State<AddAjob> {
         employmentType: employmentTypeController.text,
         description: descriptionController.text,
         category: categoryController.text,
+        imageUrl: imageUrl,
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to post job: $e')),
       );
+      setState(() => _isPosting = false);
       return false;
     }
 
@@ -195,6 +264,10 @@ class _AddAjobState extends State<AddAjob> {
     employmentTypeController.clear();
     descriptionController.clear();
     categoryController.clear();
+    setState(() {
+      _selectedImage = null;
+      _isPosting = false;
+    });
 
     // Show a success message
     ScaffoldMessenger.of(context).showSnackBar(
@@ -212,6 +285,92 @@ class _AddAjobState extends State<AddAjob> {
       Navigator.of(context).pop();
     }
     return true;
+  }
+
+  Widget _buildImagePicker() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Post image',
+          style: GoogleFonts.dmSans(
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
+            color: Color(0xFF150B3D),
+          ),
+        ),
+        SizedBox(height: 12),
+        GestureDetector(
+          onTap: _isPosting ? null : _pickPostImage,
+          child: Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (_selectedImage != null)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.file(
+                      _selectedImage!,
+                      width: double.infinity,
+                      height: 180,
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                else
+                  Row(
+                    children: [
+                      Icon(Icons.add_photo_alternate_outlined,
+                          color: Colors.grey.shade700),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Tap to add an optional image to the job post.',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 14,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                if (_selectedImage != null) ...[
+                  SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _selectedImage!.path.split('\\').last,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 13,
+                            color: Colors.grey.shade700,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: _isPosting
+                            ? null
+                            : () {
+                                setState(() => _selectedImage = null);
+                              },
+                        child: Text('Remove'),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget buildInputField(BuildContext context, String labelText,

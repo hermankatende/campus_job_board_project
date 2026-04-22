@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cjb/pages/main/main_page/apply_page.dart';
+import 'package:cjb/services/jobs_service.dart';
 
 class JobDescription extends StatefulWidget {
   final int jobId;
@@ -33,6 +34,64 @@ class JobDescription extends StatefulWidget {
 
 class _JobDescriptionState extends State<JobDescription> {
   bool _isSaved = false;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedState();
+  }
+
+  Future<void> _loadSavedState() async {
+    try {
+      final savedJobs = await JobsService.instance.fetchSavedJobs();
+      if (!mounted) return;
+      setState(() {
+        _isSaved = savedJobs.any((job) => job.id == widget.jobId);
+      });
+    } catch (_) {
+      // Ignore initial saved-state errors and keep the page usable.
+    }
+  }
+
+  Future<void> _toggleSavedState() async {
+    if (_isSaving) return;
+
+    setState(() => _isSaving = true);
+    try {
+      if (_isSaved) {
+        await JobsService.instance.unsaveJob(widget.jobId);
+      } else {
+        await JobsService.instance.saveJob(widget.jobId);
+      }
+
+      if (!mounted) return;
+      setState(() => _isSaved = !_isSaved);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _isSaved ? 'Job removed from saved jobs' : 'Job saved',
+            style: GoogleFonts.poppins(),
+          ),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Unable to update saved jobs: $error',
+            style: GoogleFonts.poppins(),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,18 +109,7 @@ class _JobDescriptionState extends State<JobDescription> {
               _isSaved ? Icons.bookmark : Icons.bookmark_border,
               color: _isSaved ? Colors.blue : Colors.black,
             ),
-            onPressed: () {
-              setState(() => _isSaved = !_isSaved);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    _isSaved ? 'Job saved' : 'Job removed from saved',
-                    style: GoogleFonts.poppins(),
-                  ),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
+            onPressed: _isSaving ? null : _toggleSavedState,
           ),
         ],
       ),

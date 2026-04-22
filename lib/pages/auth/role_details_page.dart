@@ -32,9 +32,9 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
 
   final List<String> _collegeOptions = [
     'CHUSS',
-    'COCISS',
+    'COCIS',
     'CONAS',
-    'COBAM',
+    'COBAMS',
     'CEDAT',
     'CHS',
     'LAW',

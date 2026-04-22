@@ -5,6 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 /// Represents the full user profile returned by the Django backend.
 class UserProfile {
+  static String normalizeRole(String value) => value.trim().toLowerCase();
+
   final int id;
   final String firebaseUid;
   final String email;
@@ -79,7 +81,7 @@ class UserProfile {
       firebaseUid: json['firebase_uid'] ?? '',
       email: json['email'] ?? '',
       fullName: json['full_name'] ?? '',
-      role: json['role'] ?? 'student',
+      role: normalizeRole((json['role'] ?? 'student').toString()),
       phone: json['phone'] ?? '',
       imageUrl: json['image_url'] ?? '',
       gender: json['gender'] ?? '',
@@ -141,7 +143,7 @@ class UserProfile {
       firebaseUid: firebaseUid ?? this.firebaseUid,
       email: email ?? this.email,
       fullName: fullName ?? this.fullName,
-      role: role ?? this.role,
+      role: role != null ? normalizeRole(role) : this.role,
       phone: phone ?? this.phone,
       imageUrl: imageUrl ?? this.imageUrl,
       gender: gender ?? this.gender,
@@ -193,10 +195,10 @@ class UserProfile {
         'department': department,
       };
 
-  bool get isStudent => role == 'student';
-  bool get isRecruiter => role == 'recruiter';
-  bool get isLecturer => role == 'lecturer';
-  bool get isAdmin => role == 'admin';
+  bool get isStudent => normalizeRole(role) == 'student';
+  bool get isRecruiter => normalizeRole(role) == 'recruiter';
+  bool get isLecturer => normalizeRole(role) == 'lecturer';
+  bool get isAdmin => normalizeRole(role) == 'admin';
 }
 
 /// Combines Firebase Authentication with the Django backend.
@@ -308,10 +310,10 @@ class AuthService {
     final values = Map<String, dynamic>.from(data as Map<String, dynamic>);
     final currentEmail = _firebase.currentUser?.email?.trim().toLowerCase();
 
-    if ((values['role'] as String?)?.trim().isEmpty ?? true) {
-      if (currentEmail == systemAdminEmail) {
-        values['role'] = 'admin';
-      } else if (currentEmail?.contains('recruiter') ?? false) {
+    if (currentEmail == systemAdminEmail) {
+      values['role'] = 'admin';
+    } else if ((values['role'] as String?)?.trim().isEmpty ?? true) {
+      if (currentEmail?.contains('recruiter') ?? false) {
         values['role'] = 'recruiter';
       } else if (currentEmail?.contains('lecturer') ?? false) {
         values['role'] = 'lecturer';

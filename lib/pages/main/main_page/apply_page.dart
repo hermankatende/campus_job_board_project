@@ -100,7 +100,9 @@ class _ApplyPageState extends State<ApplyPage> {
     try {
       final uploadedUrl = await CloudinaryUploadService.uploadFile(
         filePath: _selectedFile!.path,
-        resourceType: 'auto',
+        resourceType: 'raw',
+        folder: 'resumes',
+        accessMode: 'public',
       );
 
       final application = await _appService.applyToJob(
