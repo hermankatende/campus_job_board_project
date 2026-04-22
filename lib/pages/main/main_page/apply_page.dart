@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:cjb/services/applications_service.dart';
 import 'package:cjb/services/auth_service.dart';
 import 'package:cjb/services/cloudinary_upload_service.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApplyPage extends StatefulWidget {
   final int jobId;
@@ -101,8 +102,9 @@ class _ApplyPageState extends State<ApplyPage> {
     try {
       final uploadedUrl = await CloudinaryUploadService.uploadFile(
         filePath: _selectedFile!.path,
-        resourceType: 'raw',
+        resourceType: 'auto',
         folder: 'resumes',
+        uploadPreset: dotenv.env['CLOUDINARY_UPLOAD_PRESET']?.trim(),
       );
 
       // Keep resume on profile as a fallback so posters can still access CV
