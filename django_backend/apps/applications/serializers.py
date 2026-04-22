@@ -10,7 +10,7 @@ class ApplicationSerializer(serializers.ModelSerializer):
     applicant_uid = serializers.CharField(source="applicant.firebase_uid", read_only=True)
     applicant_email = serializers.CharField(source="applicant.email", read_only=True)
     job_title = serializers.CharField(source="job.title", read_only=True)
-    resume_url = serializers.SerializerMethodField()
+    resume_url = serializers.URLField(required=False, allow_blank=True)
 
     def get_applicant_name(self, obj):
         full_name = (obj.applicant.full_name or "").strip()
@@ -23,12 +23,11 @@ class ApplicationSerializer(serializers.ModelSerializer):
 
         return obj.applicant.firebase_uid or "Unnamed Applicant"
 
-    def get_resume_url(self, obj):
-        application_resume = (obj.resume_url or "").strip()
-        if application_resume:
-            return application_resume
-
-        return (obj.applicant.resume_url or "").strip()
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if not (data.get("resume_url") or "").strip():
+            data["resume_url"] = (instance.applicant.resume_url or "").strip()
+        return data
 
     class Meta:
         model = Application
