@@ -3,6 +3,8 @@
 import 'package:cjb/theme/styles.dart';
 import 'package:flutter/material.dart';
 import 'package:cjb/data/post_entity.dart';
+import 'package:cjb/pages/main/main_page/apply_page.dart';
+import 'package:cjb/pages/main/main_page/job_description.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -16,6 +18,14 @@ class SinglePostCardWidget extends StatefulWidget {
 }
 
 class _SinglePostCardWidgetState extends State<SinglePostCardWidget> {
+  late final Future<List<String>> _postImagesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _postImagesFuture = _fetchPostImages();
+  }
+
   Future<List<String>> _fetchPostImages() async {
     List<String> imageUrls = [];
     try {
@@ -26,6 +36,36 @@ class _SinglePostCardWidgetState extends State<SinglePostCardWidget> {
       print('Error fetching post images: $e');
     }
     return imageUrls;
+  }
+
+  int get _jobId => widget.post.jobId ?? 0;
+
+  void _openApplyPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ApplyPage(jobId: _jobId),
+      ),
+    );
+  }
+
+  void _openJobDetailsPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => JobDescription(
+          jobId: _jobId,
+          jobTitle: widget.post.jobTitle ?? '',
+          company: widget.post.email ?? '',
+          location: widget.post.location ?? '',
+          employmentType: widget.post.employmentType ?? '',
+          description: widget.post.description ?? '',
+          requirements: widget.post.requirements ?? '',
+          postedByName: widget.post.username ?? '',
+          imageUrl: widget.post.imageUrl ?? '',
+        ),
+      ),
+    );
   }
 
   void _launchURL(String url) async {
@@ -127,7 +167,7 @@ class _SinglePostCardWidgetState extends State<SinglePostCardWidget> {
           ),
         ),
         FutureBuilder<List<String>>(
-          future: _fetchPostImages(),
+          future: _postImagesFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Container(); // Removed CircularProgressIndicator
@@ -154,6 +194,12 @@ class _SinglePostCardWidgetState extends State<SinglePostCardWidget> {
                       child: CachedNetworkImage(
                         imageUrl: imageUrls[index],
                         fit: BoxFit.cover,
+                        memCacheWidth: 1200,
+                        maxWidthDiskCache: 1200,
+                        filterQuality: FilterQuality.low,
+                        fadeInDuration: Duration.zero,
+                        placeholderFadeInDuration: Duration.zero,
+                        useOldImageOnUrlChange: true,
                         placeholder: (context, url) =>
                             const Center(child: CircularProgressIndicator()),
                         errorWidget: (context, url, error) =>
@@ -217,8 +263,11 @@ class _SinglePostCardWidgetState extends State<SinglePostCardWidget> {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _singleActionItemWidget(
-                icon: Icons.thumb_up_alt_outlined, title: "Like"),
-            _singleActionItemWidget(icon: Icons.comment, title: "Comment"),
+              icon: Icons.info_outline,
+              title: "Details",
+              onTap: _openJobDetailsPage,
+            ),
+            _applyNowButton(),
             _singleActionItemWidget(icon: Icons.share, title: "share"),
             // _singleActionItemWidget(icon: Icons.send, title: "Send"),
           ],
@@ -233,18 +282,58 @@ class _SinglePostCardWidgetState extends State<SinglePostCardWidget> {
     );
   }
 
-  _singleActionItemWidget({IconData? icon, String? title}) {
-    return Column(
-      children: [
-        Icon(
-          icon,
-          color: Colors.grey,
+  Widget _singleActionItemWidget({
+    IconData? icon,
+    String? title,
+    VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: Colors.grey,
+            ),
+            Text(
+              "$title",
+              style: const TextStyle(color: Colors.grey),
+            ),
+          ],
         ),
-        Text(
-          "$title",
-          style: const TextStyle(color: Colors.grey),
+      ),
+    );
+  }
+
+  Widget _applyNowButton() {
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: _openApplyPage,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.blue.shade50,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.blue.shade200),
         ),
-      ],
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.send, size: 16, color: Colors.blue),
+            SizedBox(width: 6),
+            Text(
+              'Apply now',
+              style: TextStyle(
+                color: Colors.blue,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

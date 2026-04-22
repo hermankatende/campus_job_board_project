@@ -15,6 +15,11 @@ class PostService {
       _cachedPosts = jobs
           .map(
             (job) => PostEntity(
+              jobId: job.id,
+              jobTitle: job.title,
+              location: job.location,
+              employmentType: job.employmentType,
+              requirements: job.requirements,
               username: job.postedByName.isNotEmpty ? job.postedByName : 'User',
               description: job.description,
               imageUrl: job.imageUrl,
