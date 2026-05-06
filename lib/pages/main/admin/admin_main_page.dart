@@ -1,7 +1,7 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 import 'package:cjb/pages/main/admin/admin_dashboard_page.dart';
 import 'package:cjb/pages/main/admin/admin_users_page.dart';
-import 'package:cjb/pages/main/user_profile/profile_page.dart';
+import 'package:cjb/pages/main/user_profile/profile_page.dart' hide SizedBox;
 import 'package:flutter/material.dart';
 
 class AdminMainPage extends StatefulWidget {

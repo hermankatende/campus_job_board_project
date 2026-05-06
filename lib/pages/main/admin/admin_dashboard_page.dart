@@ -823,8 +823,8 @@ class _AdminAllJobPostsPageState extends State<_AdminAllJobPostsPage> {
       _refresh();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Job deleted. You can undo within 1 minute.'),
-          duration: Duration(seconds: 60),
+          content: Text('Job deleted. You can undo within 20 seconds.'),
+          duration: Duration(seconds: 20),
           action: SnackBarAction(
             label: 'UNDO',
             onPressed: () async {

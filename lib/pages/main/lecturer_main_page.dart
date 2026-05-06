@@ -726,6 +726,7 @@ class _LecturerMyJobPostingsPageState
                             builder: (_) => JobApplicationsPage(
                               jobId: job.id,
                               jobTitle: job.title,
+                              isLecturer: true,
                             ),
                           ),
                         );
