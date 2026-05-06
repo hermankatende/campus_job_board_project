@@ -21,6 +21,7 @@ import 'pages/onboarding/on_boarding_screen.dart';
 // import 'package:googleapis_auth/auth_io.dart';
 // import 'package:flutter/services.dart' show rootBundle;
 //import 'package:hive/hive.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -38,29 +39,34 @@ Future<void> main() async {
     debugPrint('Failed to load .env: $error');
   }
 
-  final appDocumentDir = await getApplicationDocumentsDirectory();
-  await Hive.initFlutter(appDocumentDir.path);
+  if (kIsWeb) {
+    await Hive.initFlutter();
+  } else {
+    final appDocumentDir = await getApplicationDocumentsDirectory();
+    await Hive.initFlutter(appDocumentDir.path);
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  }
   await Hive.openBox('notifications');
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  const AndroidInitializationSettings initializationSettingsAndroid =
-      AndroidInitializationSettings('@mipmap/ic_launcher');
-  final InitializationSettings initializationSettings = InitializationSettings(
-    android: initializationSettingsAndroid,
-  );
+  if (!kIsWeb) {
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    final InitializationSettings initializationSettings =
+        InitializationSettings(android: initializationSettingsAndroid);
 
-  await flutterLocalNotificationsPlugin.initialize(
-    initializationSettings,
-    onDidReceiveNotificationResponse: (NotificationResponse response) async {
-      if (response.payload != null) {
-        // Navigate to JobsList on notification click
-        navigatorKey.currentState?.push(MaterialPageRoute(
-          builder: (context) => JobsList(),
-        ));
-      }
-    },
-  );
+    await flutterLocalNotificationsPlugin.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) async {
+        if (response.payload != null) {
+          // Navigate to JobsList on notification click
+          navigatorKey.currentState?.push(MaterialPageRoute(
+            builder: (context) => JobsList(),
+          ));
+        }
+      },
+    );
+  }
 
   runApp(MyApp());
 }

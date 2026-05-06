@@ -33,6 +33,11 @@ class AppJob {
   final String postedByName;
   final String postedByUid;
   final String postedByRole;
+  // Recruiter contact details — set when a lecturer posts on behalf of a recruiter
+  final String recruiterContactName;
+  final String recruiterContactEmail;
+  final String recruiterContactPhone;
+  final String recruiterContactCompany;
   final DateTime? createdAt;
 
   const AppJob({
@@ -49,8 +54,16 @@ class AppJob {
     required this.postedByName,
     required this.postedByUid,
     required this.postedByRole,
+    this.recruiterContactName = '',
+    this.recruiterContactEmail = '',
+    this.recruiterContactPhone = '',
+    this.recruiterContactCompany = '',
     this.createdAt,
   });
+
+  /// Whether this job was posted by a lecturer on behalf of an external recruiter.
+  bool get isLecturerBrokered =>
+      postedByRole == 'lecturer' && recruiterContactName.trim().isNotEmpty;
 
   factory AppJob.fromJson(Map<String, dynamic> json) {
     return AppJob(
@@ -67,6 +80,10 @@ class AppJob {
       postedByName: json['posted_by_name'] ?? '',
       postedByUid: json['posted_by_uid'] ?? '',
       postedByRole: json['posted_by_role'] ?? '',
+      recruiterContactName: json['recruiter_contact_name'] ?? '',
+      recruiterContactEmail: json['recruiter_contact_email'] ?? '',
+      recruiterContactPhone: json['recruiter_contact_phone'] ?? '',
+      recruiterContactCompany: json['recruiter_contact_company'] ?? '',
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'])
           : null,
@@ -159,6 +176,10 @@ class JobsService {
     required String employmentType,
     String imageUrl = '',
     String requirements = '',
+    String recruiterContactName = '',
+    String recruiterContactEmail = '',
+    String recruiterContactPhone = '',
+    String recruiterContactCompany = '',
   }) async {
     final data = await _api.post('/api/jobs/', {
       'title': title,
@@ -170,6 +191,14 @@ class JobsService {
       'employment_type': employmentType,
       'image_url': imageUrl,
       'status': 'open',
+      if (recruiterContactName.trim().isNotEmpty)
+        'recruiter_contact_name': recruiterContactName.trim(),
+      if (recruiterContactEmail.trim().isNotEmpty)
+        'recruiter_contact_email': recruiterContactEmail.trim(),
+      if (recruiterContactPhone.trim().isNotEmpty)
+        'recruiter_contact_phone': recruiterContactPhone.trim(),
+      if (recruiterContactCompany.trim().isNotEmpty)
+        'recruiter_contact_company': recruiterContactCompany.trim(),
     });
 
     return AppJob.fromJson(data as Map<String, dynamic>);

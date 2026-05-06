@@ -1,8 +1,15 @@
+import mimetypes
+import os
+import uuid
+
+import firebase_admin
 from django.conf import settings
 from django.core.mail import send_mail
 from django.utils import timezone
+from firebase_admin import credentials, storage
 from rest_framework import generics, permissions
 from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -10,6 +17,73 @@ from rest_framework.views import APIView
 from apps.users.models import UserProfile
 from apps.users.permissions import IsAdminFromProfile
 from apps.users.serializers import UserOnboardingSerializer, UserProfileSerializer
+
+
+def _get_firebase_bucket():
+    """Return the Firebase Storage bucket, initialising Firebase if needed."""
+    if not firebase_admin._apps:
+        from apps.common.auth import FirebaseAuthentication
+        FirebaseAuthentication._initialize_firebase_if_needed()
+    bucket_name = os.getenv("FIREBASE_STORAGE_BUCKET", "cjb-app.appspot.com")
+    return storage.bucket(bucket_name)
+
+
+class ResumeUploadView(APIView):
+    """POST /api/users/upload-resume/
+    Accepts a multipart file upload (field name: 'file').
+    Uploads it to Firebase Storage using the server-side admin SDK
+    (bypasses client-side Storage rules) and returns the public download URL.
+    """
+
+    parser_classes = [MultiPartParser]
+    permission_classes = [IsAuthenticated]
+
+    ALLOWED_EXTENSIONS = {'.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'}
+    MAX_SIZE_MB = 10
+
+    def post(self, request):
+        uploaded = request.FILES.get('file')
+        if not uploaded:
+            return Response({'error': 'No file provided. Use field name "file".'}, status=400)
+
+        original_name = uploaded.name or 'resume'
+        _, ext = os.path.splitext(original_name)
+        ext = ext.lower()
+
+        if ext not in self.ALLOWED_EXTENSIONS:
+            return Response(
+                {'error': f'File type "{ext}" not allowed. Use: {", ".join(sorted(self.ALLOWED_EXTENSIONS))}'},
+                status=400,
+            )
+
+        if uploaded.size > self.MAX_SIZE_MB * 1024 * 1024:
+            return Response({'error': f'File too large. Maximum size is {self.MAX_SIZE_MB} MB.'}, status=400)
+
+        firebase_user = getattr(request, 'firebase_user', {})
+        uid = firebase_user.get('uid', 'anonymous')
+        unique_name = f"{uuid.uuid4().hex}{ext}"
+        blob_path = f"resumes/{uid}/{unique_name}"
+
+        content_type = mimetypes.guess_type(original_name)[0] or 'application/octet-stream'
+
+        try:
+            bucket = _get_firebase_bucket()
+            blob = bucket.blob(blob_path)
+            blob.upload_from_file(uploaded, content_type=content_type)
+            blob.make_public()
+            download_url = blob.public_url
+        except Exception as exc:
+            return Response({'error': f'Upload failed: {exc}'}, status=500)
+
+        # Also save to the user's profile resume_url
+        try:
+            profile = UserProfile.objects.get(firebase_uid=uid)
+            profile.resume_url = download_url
+            profile.save(update_fields=['resume_url', 'updated_at'])
+        except UserProfile.DoesNotExist:
+            pass
+
+        return Response({'url': download_url}, status=200)
 
 
 class MeView(APIView):

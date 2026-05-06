@@ -8,10 +8,15 @@ class JobApplicationsPage extends StatefulWidget {
   final int jobId;
   final String jobTitle;
 
+  /// When true the viewer is a lecturer: they can view CVs and endorse
+  /// applicants, but cannot change application status.
+  final bool isLecturer;
+
   const JobApplicationsPage({
     super.key,
     required this.jobId,
     required this.jobTitle,
+    this.isLecturer = false,
   });
 
   @override
@@ -54,6 +59,23 @@ class _JobApplicationsPageState extends State<JobApplicationsPage> {
     }
   }
 
+  Future<void> _toggleEndorse(JobApplication app) async {
+    try {
+      final result =
+          await ApplicationsService.instance.endorseApplication(app.id);
+      if (!mounted) return;
+      setState(_reload);
+      final msg = result['message'] ?? 'Done';
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('$msg')));
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Endorse failed: $error')),
+      );
+    }
+  }
+
   Future<void> _openResume(String url) async {
     final candidates = _resumeUrlCandidates(url);
 
@@ -61,12 +83,16 @@ class _JobApplicationsPageState extends State<JobApplicationsPage> {
       final uri = Uri.tryParse(candidate);
       if (uri == null) continue;
 
-      final openedInApp = await launchUrl(uri, mode: LaunchMode.inAppWebView);
-      if (openedInApp) return;
-
       final openedExternal =
           await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (openedExternal) return;
+
+      final openedDefault =
+          await launchUrl(uri, mode: LaunchMode.platformDefault);
+      if (openedDefault) return;
+
+      final openedInApp = await launchUrl(uri, mode: LaunchMode.inAppWebView);
+      if (openedInApp) return;
     }
 
     if (!mounted) return;
@@ -162,9 +188,48 @@ class _JobApplicationsPageState extends State<JobApplicationsPage> {
                       final hasResume = app.resumeUrl.trim().isNotEmpty;
 
                       return ListTile(
-                        title: Text(app.applicantName.isEmpty
-                            ? 'Unnamed Applicant'
-                            : app.applicantName),
+                        title: Row(
+                          children: [
+                            Expanded(
+                              child: Text(app.applicantName.isEmpty
+                                  ? 'Unnamed Applicant'
+                                  : app.applicantName),
+                            ),
+                            if (app.lecturerEndorsed)
+                              Tooltip(
+                                message: app.endorsedByName.isNotEmpty
+                                    ? 'Endorsed by ${app.endorsedByName}'
+                                    : 'Lecturer endorsed',
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.shade100,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                        color: Colors.green.shade400),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.verified,
+                                          size: 12,
+                                          color: Colors.green.shade700),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        'Endorsed',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.green.shade700,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
@@ -207,28 +272,65 @@ class _JobApplicationsPageState extends State<JobApplicationsPage> {
                                           MaterialTapTargetSize.shrinkWrap,
                                     ),
                                   ),
+                                // Lecturer endorse button
+                                if (widget.isLecturer)
+                                  TextButton.icon(
+                                    onPressed: () => _toggleEndorse(app),
+                                    icon: Icon(
+                                      app.lecturerEndorsed
+                                          ? Icons.verified
+                                          : Icons.verified_outlined,
+                                      size: 16,
+                                      color: app.lecturerEndorsed
+                                          ? Colors.green
+                                          : Colors.grey,
+                                    ),
+                                    label: Text(
+                                      app.lecturerEndorsed
+                                          ? 'Remove endorsement'
+                                          : 'Endorse',
+                                      style: TextStyle(
+                                        color: app.lecturerEndorsed
+                                            ? Colors.green
+                                            : Colors.grey.shade700,
+                                      ),
+                                    ),
+                                    style: TextButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 0,
+                                      ),
+                                      minimumSize: const Size(0, 32),
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                  ),
                               ],
                             ),
                           ],
                         ),
                         isThreeLine: true,
-                        trailing: PopupMenuButton<String>(
-                          onSelected: (value) {
-                            _changeStatus(app, value);
-                          },
-                          itemBuilder: (_) => [
-                            PopupMenuItem(
-                                value: 'reviewed',
-                                child: Text('Mark Reviewed')),
-                            PopupMenuItem(
-                                value: 'shortlisted', child: Text('Shortlist')),
-                            PopupMenuItem(
-                                value: 'rejected', child: Text('Reject')),
-                            PopupMenuItem(
-                                value: 'applied',
-                                child: Text('Reset to Applied')),
-                          ],
-                        ),
+                        // Only recruiters/admins see the status-change menu
+                        trailing: widget.isLecturer
+                            ? null
+                            : PopupMenuButton<String>(
+                                onSelected: (value) {
+                                  _changeStatus(app, value);
+                                },
+                                itemBuilder: (_) => [
+                                  PopupMenuItem(
+                                      value: 'reviewed',
+                                      child: Text('Mark Reviewed')),
+                                  PopupMenuItem(
+                                      value: 'shortlisted',
+                                      child: Text('Shortlist')),
+                                  PopupMenuItem(
+                                      value: 'rejected', child: Text('Reject')),
+                                  PopupMenuItem(
+                                      value: 'applied',
+                                      child: Text('Reset to Applied')),
+                                ],
+                              ),
                         onTap:
                             hasResume ? () => _openResume(app.resumeUrl) : null,
                       );

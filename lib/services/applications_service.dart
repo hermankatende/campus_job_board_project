@@ -11,6 +11,8 @@ class JobApplication {
   final String coverLetter;
   final String resumeUrl;
   final String status;
+  final bool lecturerEndorsed;
+  final String endorsedByName;
   final DateTime? createdAt;
 
   const JobApplication({
@@ -24,6 +26,8 @@ class JobApplication {
     required this.coverLetter,
     required this.resumeUrl,
     required this.status,
+    this.lecturerEndorsed = false,
+    this.endorsedByName = '',
     this.createdAt,
   });
 
@@ -39,6 +43,8 @@ class JobApplication {
       coverLetter: json['cover_letter'] ?? '',
       resumeUrl: json['resume_url'] ?? '',
       status: json['status'] ?? 'applied',
+      lecturerEndorsed: json['lecturer_endorsed'] ?? false,
+      endorsedByName: json['endorsed_by_name'] ?? '',
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'])
           : null,
@@ -145,6 +151,14 @@ class ApplicationsService {
 
   Future<void> deleteApplication(int applicationId) async {
     await _api.delete('/api/applications/$applicationId/');
+  }
+
+  /// Toggles the lecturer endorsement on an application.
+  /// Only works when the authenticated user is a lecturer who posted the job.
+  Future<Map<String, dynamic>> endorseApplication(int applicationId) async {
+    final data =
+        await _api.post('/api/applications/$applicationId/endorse/', {});
+    return data as Map<String, dynamic>;
   }
 
   List<JobApplication> _parseList(dynamic data) {

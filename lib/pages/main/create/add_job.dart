@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:cjb/pages/auth/identity.dart';
 import 'package:cjb/pages/main/notifications/notification_services.dart';
+import 'package:cjb/services/auth_service.dart';
 import 'package:cjb/services/cloudinary_upload_service.dart';
 import 'package:cjb/services/jobs_service.dart';
 import 'package:flutter/material.dart';
@@ -28,10 +29,21 @@ class _AddAjobState extends State<AddAjob> {
       TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController categoryController = TextEditingController();
+  // Recruiter contact controllers — only shown for lecturers
+  final TextEditingController _recruiterNameController =
+      TextEditingController();
+  final TextEditingController _recruiterEmailController =
+      TextEditingController();
+  final TextEditingController _recruiterPhoneController =
+      TextEditingController();
+  final TextEditingController _recruiterCompanyController =
+      TextEditingController();
 
   String selectedCategory = '';
   String selectedEmploymentType = '';
   String selectedWorkType = '';
+  bool _isLecturer = false;
+  bool _showRecruiterSection = false;
 
   final NotificationService _notificationService = NotificationService();
   final JobsService _jobsService = JobsService.instance;
@@ -54,7 +66,12 @@ class _AddAjobState extends State<AddAjob> {
 
   Future<void> _loadUserData() async {
     await GlobalVariables().loadUserData();
-    setState(() {});
+    final profile = await AuthService.instance.syncProfile();
+    if (mounted) {
+      setState(() {
+        _isLecturer = profile?.role == 'lecturer';
+      });
+    }
   }
 
   Future<void> _pickPostImage() async {
@@ -87,6 +104,10 @@ class _AddAjobState extends State<AddAjob> {
     employmentTypeController.dispose();
     descriptionController.dispose();
     categoryController.dispose();
+    _recruiterNameController.dispose();
+    _recruiterEmailController.dispose();
+    _recruiterPhoneController.dispose();
+    _recruiterCompanyController.dispose();
     super.dispose();
   }
 
@@ -166,6 +187,11 @@ class _AddAjobState extends State<AddAjob> {
                 ),
                 SizedBox(height: 30),
                 _buildImagePicker(),
+                // Recruiter contact section — only for lecturers
+                if (_isLecturer) ...[
+                  SizedBox(height: 30),
+                  _buildRecruiterContactSection(),
+                ],
               ],
             ),
             SizedBox(height: 30),
@@ -248,6 +274,10 @@ class _AddAjobState extends State<AddAjob> {
         description: descriptionController.text,
         category: categoryController.text,
         imageUrl: imageUrl,
+        recruiterContactName: _recruiterNameController.text,
+        recruiterContactEmail: _recruiterEmailController.text,
+        recruiterContactPhone: _recruiterPhoneController.text,
+        recruiterContactCompany: _recruiterCompanyController.text,
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -264,9 +294,14 @@ class _AddAjobState extends State<AddAjob> {
     employmentTypeController.clear();
     descriptionController.clear();
     categoryController.clear();
+    _recruiterNameController.clear();
+    _recruiterEmailController.clear();
+    _recruiterPhoneController.clear();
+    _recruiterCompanyController.clear();
     setState(() {
       _selectedImage = null;
       _isPosting = false;
+      _showRecruiterSection = false;
     });
 
     // Show a success message
@@ -370,6 +405,112 @@ class _AddAjobState extends State<AddAjob> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildRecruiterContactSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: () =>
+              setState(() => _showRecruiterSection = !_showRecruiterSection),
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.business_center_outlined,
+                    color: Colors.blue.shade700, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Add Recruiter Contact Details (optional)',
+                    style: GoogleFonts.dmSans(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: Colors.blue.shade700,
+                    ),
+                  ),
+                ),
+                Icon(
+                  _showRecruiterSection
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
+                  color: Colors.blue.shade700,
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (_showRecruiterSection) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'When a recruiter asks you to post their vacancy, add their contact info below so students can reach them directly.',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _simpleInput(_recruiterNameController, 'Recruiter full name'),
+                const SizedBox(height: 12),
+                _simpleInput(_recruiterCompanyController, 'Recruiter company'),
+                const SizedBox(height: 12),
+                _simpleInput(_recruiterEmailController, 'Recruiter email',
+                    keyboardType: TextInputType.emailAddress),
+                const SizedBox(height: 12),
+                _simpleInput(_recruiterPhoneController, 'Recruiter phone',
+                    keyboardType: TextInputType.phone),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _simpleInput(
+    TextEditingController controller,
+    String hint, {
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      style: GoogleFonts.dmSans(fontSize: 14),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: GoogleFonts.dmSans(
+          fontSize: 14,
+          color: Colors.grey.shade500,
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+      ),
     );
   }
 

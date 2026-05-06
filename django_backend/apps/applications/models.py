@@ -17,6 +17,15 @@ class Application(models.Model):
     cover_letter = models.TextField(blank=True)
     resume_url = models.URLField(blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.APPLIED)
+    # Lecturer endorsement — lecturers can endorse an applicant to boost their ranking
+    lecturer_endorsed = models.BooleanField(default=False)
+    endorsed_by = models.ForeignKey(
+        UserProfile,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="endorsed_applications",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

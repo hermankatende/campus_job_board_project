@@ -38,12 +38,16 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
       final uri = Uri.tryParse(candidate);
       if (uri == null) continue;
 
-      final openedInApp = await launchUrl(uri, mode: LaunchMode.inAppWebView);
-      if (openedInApp) return;
-
       final openedExternal =
           await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (openedExternal) return;
+
+      final openedDefault =
+          await launchUrl(uri, mode: LaunchMode.platformDefault);
+      if (openedDefault) return;
+
+      final openedInApp = await launchUrl(uri, mode: LaunchMode.inAppWebView);
+      if (openedInApp) return;
     }
 
     if (!mounted) return;

@@ -11,6 +11,7 @@ class ApplicationSerializer(serializers.ModelSerializer):
     applicant_email = serializers.CharField(source="applicant.email", read_only=True)
     job_title = serializers.CharField(source="job.title", read_only=True)
     resume_url = serializers.URLField(required=False, allow_blank=True)
+    endorsed_by_name = serializers.SerializerMethodField()
 
     def get_applicant_name(self, obj):
         full_name = (obj.applicant.full_name or "").strip()
@@ -22,6 +23,11 @@ class ApplicationSerializer(serializers.ModelSerializer):
             return email
 
         return obj.applicant.firebase_uid or "Unnamed Applicant"
+
+    def get_endorsed_by_name(self, obj):
+        if obj.endorsed_by:
+            return (obj.endorsed_by.full_name or "").strip() or obj.endorsed_by.email
+        return ""
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -44,6 +50,8 @@ class ApplicationSerializer(serializers.ModelSerializer):
             "cover_letter",
             "resume_url",
             "status",
+            "lecturer_endorsed",
+            "endorsed_by_name",
             "created_at",
             "updated_at",
         ]
@@ -53,6 +61,8 @@ class ApplicationSerializer(serializers.ModelSerializer):
             "job_title",
             "applicant_name",
             "applicant_email",
+            "lecturer_endorsed",
+            "endorsed_by_name",
             "created_at",
             "updated_at",
         ]

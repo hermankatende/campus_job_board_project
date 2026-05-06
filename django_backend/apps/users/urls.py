@@ -3,6 +3,7 @@ from django.urls import path
 from apps.users.views import (
     LecturerVerificationView,
     MeView,
+    ResumeUploadView,
     StudentSearchView,
     UserDeleteView,
     UserManagementListView,
@@ -17,6 +18,7 @@ urlpatterns = [
     path("me/", MeView.as_view(), name="users-me"),
     path("onboarding/", UserOnboardingView.as_view(), name="users-onboarding"),
     path("search/", StudentSearchView.as_view(), name="student-search"),
+    path("upload-resume/", ResumeUploadView.as_view(), name="upload-resume"),
     path("profiles/", UserProfileListCreateView.as_view(), name="user-profile-list"),
     path("profiles/<int:pk>/", UserProfileDetailView.as_view(), name="user-profile-detail"),
     path("admin/users/", UserManagementListView.as_view(), name="admin-user-list"),

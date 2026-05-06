@@ -29,6 +29,11 @@ class Job(models.Model):
         related_name="deleted_jobs",
     )
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.OPEN)
+    # Recruiter contact info (filled by a lecturer posting on behalf of a recruiter)
+    recruiter_contact_name = models.CharField(max_length=200, blank=True)
+    recruiter_contact_email = models.EmailField(blank=True)
+    recruiter_contact_phone = models.CharField(max_length=50, blank=True)
+    recruiter_contact_company = models.CharField(max_length=200, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

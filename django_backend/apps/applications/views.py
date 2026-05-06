@@ -79,6 +79,15 @@ class ApplicationDetailView(generics.RetrieveUpdateDestroyAPIView):
         if is_owner and "status" in serializer.validated_data:
             raise PermissionDenied("Applicants cannot change application status.")
 
+        # Lecturers who posted the job can view/endorse but cannot change status
+        if is_job_owner and not is_owner:
+            profile = UserProfile.objects.filter(firebase_uid=uid).first()
+            if profile and profile.role == UserProfile.Role.LECTURER:
+                if "status" in serializer.validated_data:
+                    raise PermissionDenied(
+                        "Lecturers cannot change application status. Use the endorse action instead."
+                    )
+
         serializer.save()
 
     def perform_destroy(self, instance):
@@ -101,7 +110,10 @@ class JobApplicationListView(generics.ListAPIView):
         job = get_object_or_404(Job, pk=self.kwargs["job_id"])
         if job.posted_by.firebase_uid != uid:
             raise PermissionDenied("Only the job owner can view applications for this job.")
-        return Application.objects.select_related("job", "applicant").filter(job=job)
+        # Endorsed applications rank first, then ordered by most recent
+        return Application.objects.select_related("job", "applicant", "endorsed_by").filter(
+            job=job
+        ).order_by("-lecturer_endorsed", "-created_at")
 
 
 class JobApplicationStatsView(APIView):
@@ -139,5 +151,52 @@ class JobApplicationStatsView(APIView):
                 "shortlisted": shortlisted,
                 "rejected": rejected,
                 "hired": hired,
+            }
+        )
+
+
+class EndorseApplicationView(APIView):
+    """
+    POST /api/applications/{pk}/endorse/
+    Allows a lecturer who posted the job to toggle their endorsement of an application.
+    Endorsed applications are ranked first when recruiters (or anyone) views the list.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        uid = getattr(request, "firebase_user", {}).get("uid")
+        profile = UserProfile.objects.filter(firebase_uid=uid).first()
+
+        if not profile:
+            raise PermissionDenied("Profile not found.")
+
+        if profile.role != UserProfile.Role.LECTURER:
+            raise PermissionDenied("Only lecturers can endorse applications.")
+
+        application = get_object_or_404(
+            Application.objects.select_related("job", "job__posted_by"), pk=pk
+        )
+
+        if application.job.posted_by.firebase_uid != uid:
+            raise PermissionDenied("You can only endorse applications for jobs you posted.")
+
+        # Toggle endorsement
+        if application.lecturer_endorsed and application.endorsed_by == profile:
+            application.lecturer_endorsed = False
+            application.endorsed_by = None
+            message = "Endorsement removed."
+        else:
+            application.lecturer_endorsed = True
+            application.endorsed_by = profile
+            message = "Application endorsed."
+
+        application.save(update_fields=["lecturer_endorsed", "endorsed_by", "updated_at"])
+
+        return Response(
+            {
+                "message": message,
+                "application_id": application.id,
+                "lecturer_endorsed": application.lecturer_endorsed,
             }
         )

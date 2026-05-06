@@ -40,6 +40,10 @@ class JobSerializer(serializers.ModelSerializer):
             "posted_by_uid",
             "posted_by_role",
             "status",
+            "recruiter_contact_name",
+            "recruiter_contact_email",
+            "recruiter_contact_phone",
+            "recruiter_contact_company",
             "created_at",
             "updated_at",
         ]

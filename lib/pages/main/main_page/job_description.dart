@@ -14,7 +14,13 @@ class JobDescription extends StatefulWidget {
   final String description;
   final String requirements;
   final String postedByName;
+  final String postedByRole;
   final String imageUrl;
+  // Recruiter contact — populated when a lecturer posts on behalf of a recruiter
+  final String recruiterContactName;
+  final String recruiterContactEmail;
+  final String recruiterContactPhone;
+  final String recruiterContactCompany;
 
   const JobDescription({
     required this.jobId,
@@ -25,7 +31,12 @@ class JobDescription extends StatefulWidget {
     required this.description,
     required this.requirements,
     required this.postedByName,
+    this.postedByRole = '',
     required this.imageUrl,
+    this.recruiterContactName = '',
+    this.recruiterContactEmail = '',
+    this.recruiterContactPhone = '',
+    this.recruiterContactCompany = '',
   });
 
   @override
@@ -272,6 +283,53 @@ class _JobDescriptionState extends State<JobDescription> {
                       ],
                     ),
                   ),
+
+                  // Recruiter contact card — shown for lecturer-brokered jobs
+                  if (widget.postedByRole == 'lecturer' &&
+                      widget.recruiterContactName.trim().isNotEmpty) ...[
+                    SizedBox(height: 16),
+                    Container(
+                      padding: EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.blue.shade200),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.business_center,
+                                  size: 16, color: Colors.blue.shade700),
+                              SizedBox(width: 6),
+                              Text(
+                                'Recruiter Contact',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  color: Colors.blue.shade700,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 10),
+                          if (widget.recruiterContactName.trim().isNotEmpty)
+                            _contactRow(
+                                Icons.person, widget.recruiterContactName),
+                          if (widget.recruiterContactCompany.trim().isNotEmpty)
+                            _contactRow(
+                                Icons.business, widget.recruiterContactCompany),
+                          if (widget.recruiterContactEmail.trim().isNotEmpty)
+                            _contactRow(
+                                Icons.email, widget.recruiterContactEmail),
+                          if (widget.recruiterContactPhone.trim().isNotEmpty)
+                            _contactRow(
+                                Icons.phone, widget.recruiterContactPhone),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -336,6 +394,27 @@ class _JobDescriptionState extends State<JobDescription> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _contactRow(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Icon(icon, size: 14, color: Colors.blue.shade600),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: Colors.blue.shade900,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

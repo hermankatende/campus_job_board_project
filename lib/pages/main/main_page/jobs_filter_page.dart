@@ -297,6 +297,11 @@ class _JobsFilterPageState extends State<JobsFilterPage> {
                         description: job.description,
                         posterId: job.postedByUid,
                         email: '',
+                        postedByRole: job.postedByRole,
+                        recruiterContactName: job.recruiterContactName,
+                        recruiterContactEmail: job.recruiterContactEmail,
+                        recruiterContactPhone: job.recruiterContactPhone,
+                        recruiterContactCompany: job.recruiterContactCompany,
                       );
                     },
                   ),

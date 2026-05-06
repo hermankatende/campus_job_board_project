@@ -17,6 +17,11 @@ class JobCard extends StatelessWidget {
   final String description;
   final String posterId;
   final String email;
+  final String postedByRole;
+  final String recruiterContactName;
+  final String recruiterContactEmail;
+  final String recruiterContactPhone;
+  final String recruiterContactCompany;
 
   JobCard({
     required this.jobId,
@@ -28,6 +33,11 @@ class JobCard extends StatelessWidget {
     required this.description,
     required this.posterId,
     required this.email,
+    this.postedByRole = '',
+    this.recruiterContactName = '',
+    this.recruiterContactEmail = '',
+    this.recruiterContactPhone = '',
+    this.recruiterContactCompany = '',
   });
 
   void _openApplyPage(BuildContext context) {
@@ -129,7 +139,12 @@ class JobCard extends StatelessWidget {
                 description: description,
                 requirements: '',
                 postedByName: '',
+                postedByRole: postedByRole,
                 imageUrl: '',
+                recruiterContactName: recruiterContactName,
+                recruiterContactEmail: recruiterContactEmail,
+                recruiterContactPhone: recruiterContactPhone,
+                recruiterContactCompany: recruiterContactCompany,
               ),
             ),
           );
@@ -214,8 +229,8 @@ class JobCard extends StatelessWidget {
         final result = await JobsService.instance.deleteJob(jobIntId);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Job deleted. You can undo within 1 minute.'),
-            duration: Duration(seconds: 60),
+            content: Text('Job deleted. You can undo within 20 seconds.'),
+            duration: Duration(seconds: 20),
             action: SnackBarAction(
               label: 'UNDO',
               onPressed: () async {
