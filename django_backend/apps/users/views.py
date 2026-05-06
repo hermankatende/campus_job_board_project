@@ -47,9 +47,21 @@ class ResumeUploadView(APIView):
             return Response({'error': f'File too large. Maximum size is {self.MAX_SIZE_MB} MB.'}, status=400)
 
         cloud_name = os.getenv('CLOUDINARY_CLOUD_NAME', '').strip()
-        upload_preset = os.getenv('CLOUDINARY_UPLOAD_PRESET', '').strip()
+        # Prefer a resume-specific preset when available, then fallback to the default one.
+        upload_preset = (
+            os.getenv('CLOUDINARY_RESUME_UPLOAD_PRESET', '').strip()
+            or os.getenv('CLOUDINARY_UPLOAD_PRESET', '').strip()
+        )
         if not cloud_name or not upload_preset:
-            return Response({'error': 'Cloudinary not configured on server.'}, status=500)
+            missing = []
+            if not cloud_name:
+                missing.append('CLOUDINARY_CLOUD_NAME')
+            if not upload_preset:
+                missing.append('CLOUDINARY_UPLOAD_PRESET (or CLOUDINARY_RESUME_UPLOAD_PRESET)')
+            return Response(
+                {'error': f'Cloudinary not configured on server. Missing: {", ".join(missing)}'},
+                status=500,
+            )
 
         # Determine resource_type: images go as 'image', everything else as 'raw'
         image_exts = {'.jpg', '.jpeg', '.png'}
