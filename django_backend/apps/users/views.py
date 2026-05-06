@@ -1,9 +1,12 @@
+import mimetypes
 import os
+import uuid
 
-import requests as http_requests
+import firebase_admin
 from django.conf import settings
 from django.core.mail import send_mail
 from django.utils import timezone
+from firebase_admin import storage
 from rest_framework import generics, permissions
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.parsers import MultiPartParser
@@ -16,10 +19,18 @@ from apps.users.permissions import IsAdminFromProfile
 from apps.users.serializers import UserOnboardingSerializer, UserProfileSerializer
 
 
+def _get_firebase_bucket():
+    if not firebase_admin._apps:
+        from apps.common.auth import FirebaseAuthentication
+        FirebaseAuthentication._initialize_firebase_if_needed()
+    bucket_name = os.getenv('FIREBASE_STORAGE_BUCKET', 'cjb-app.appspot.com')
+    return storage.bucket(bucket_name)
+
+
 class ResumeUploadView(APIView):
     """POST /api/users/upload-resume/
     Accepts a multipart file upload (field name: 'file').
-    Uploads to Cloudinary as a raw resource and returns the secure URL.
+    Uploads to Firebase Storage via server-side admin SDK and returns URL.
     """
 
     parser_classes = [MultiPartParser]
@@ -46,43 +57,18 @@ class ResumeUploadView(APIView):
         if uploaded.size > self.MAX_SIZE_MB * 1024 * 1024:
             return Response({'error': f'File too large. Maximum size is {self.MAX_SIZE_MB} MB.'}, status=400)
 
-        cloud_name = os.getenv('CLOUDINARY_CLOUD_NAME', '').strip()
-        # Prefer a resume-specific preset when available, then fallback to the default one.
-        upload_preset = (
-            os.getenv('CLOUDINARY_RESUME_UPLOAD_PRESET', '').strip()
-            or os.getenv('CLOUDINARY_UPLOAD_PRESET', '').strip()
-        )
-        if not cloud_name or not upload_preset:
-            missing = []
-            if not cloud_name:
-                missing.append('CLOUDINARY_CLOUD_NAME')
-            if not upload_preset:
-                missing.append('CLOUDINARY_UPLOAD_PRESET (or CLOUDINARY_RESUME_UPLOAD_PRESET)')
-            return Response(
-                {'error': f'Cloudinary not configured on server. Missing: {", ".join(missing)}'},
-                status=500,
-            )
-
-        # Determine resource_type: images go as 'image', everything else as 'raw'
-        image_exts = {'.jpg', '.jpeg', '.png'}
-        resource_type = 'image' if ext in image_exts else 'raw'
-
         firebase_user = getattr(request, 'firebase_user', {})
         uid = firebase_user.get('uid', 'anonymous')
+        unique_name = f"{uuid.uuid4().hex}{ext}"
+        blob_path = f"resumes/{uid}/{unique_name}"
+        content_type = mimetypes.guess_type(original_name)[0] or 'application/octet-stream'
 
         try:
-            cloudinary_url = f'https://api.cloudinary.com/v1_1/{cloud_name}/{resource_type}/upload'
-            response = http_requests.post(
-                cloudinary_url,
-                data={'upload_preset': upload_preset, 'folder': f'resumes/{uid}'},
-                files={'file': (original_name, uploaded, 'application/octet-stream')},
-                timeout=60,
-            )
-            result = response.json()
-            if response.status_code not in (200, 201) or 'secure_url' not in result:
-                error_msg = result.get('error', {}).get('message', response.text)
-                return Response({'error': f'Cloudinary upload failed: {error_msg}'}, status=500)
-            download_url = result['secure_url']
+            bucket = _get_firebase_bucket()
+            blob = bucket.blob(blob_path)
+            blob.upload_from_file(uploaded, content_type=content_type)
+            blob.make_public()
+            download_url = blob.public_url
         except Exception as exc:
             return Response({'error': f'Upload failed: {exc}'}, status=500)
 
