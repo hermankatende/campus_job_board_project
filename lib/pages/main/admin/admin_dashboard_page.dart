@@ -299,34 +299,42 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
       children: [
-        _metricCard('Total Users', metrics.users, Icons.people, Colors.blue),
-        _metricCard(
-            'Active Users', metrics.activeUsers, Icons.person, Colors.green),
-        _metricCard('Students', metrics.students, Icons.school, Colors.orange),
-        _metricCard(
-            'Recruiters', metrics.recruiters, Icons.business, Colors.purple),
-        _metricCard('Lecturers', metrics.lecturers, Icons.work, Colors.teal),
+        _metricCard('Total Users', metrics.users, Icons.people, Colors.blue,
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AdminUsersPage()))),
+        _metricCard('Active Users', metrics.activeUsers, Icons.person, Colors.green,
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AdminUsersPage()))),
+        _metricCard('Students', metrics.students, Icons.school, Colors.orange,
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AdminUsersPage()))),
+        _metricCard('Recruiters', metrics.recruiters, Icons.business, Colors.purple,
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AdminUsersPage()))),
+        _metricCard('Lecturers', metrics.lecturers, Icons.work, Colors.teal,
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AdminUsersPage()))),
         _metricCard(
           'Pending Verifications',
           metrics.pendingLecturerVerifications,
           Icons.pending,
           Colors.amber,
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AdminUsersPage())),
         ),
-        _metricCard(
-            'Total Jobs', metrics.jobs, Icons.work_outline, Colors.indigo),
-        _metricCard(
-            'Open Jobs', metrics.openJobs, Icons.assignment, Colors.cyan),
-        _metricCard('Applications', metrics.applications, Icons.description,
-            Colors.pink),
+        _metricCard('Total Jobs', metrics.jobs, Icons.work_outline, Colors.indigo,
+            onTap: _openAllJobPostsPage),
+        _metricCard('Open Jobs', metrics.openJobs, Icons.assignment, Colors.cyan,
+            onTap: _openAllJobPostsPage),
+        _metricCard('Applications', metrics.applications, Icons.description, Colors.pink,
+            onTap: _openAllJobPostsPage),
       ],
     );
   }
 
-  Widget _metricCard(String title, int value, IconData icon, Color color) {
+  Widget _metricCard(String title, int value, IconData icon, Color color,
+      {VoidCallback? onTap}) {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -360,7 +368,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildQuickActions() {
