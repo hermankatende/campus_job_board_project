@@ -65,7 +65,11 @@ class ResumeUploadView(APIView):
             cloudinary_url = f'https://api.cloudinary.com/v1_1/{cloud_name}/{resource_type}/upload'
             response = http_requests.post(
                 cloudinary_url,
-                data={'upload_preset': upload_preset, 'folder': f'resumes/{uid}'},
+                data={
+                    'upload_preset': upload_preset,
+                    'folder': f'resumes/{uid}',
+                    'type': 'upload',
+                },
                 files={'file': (original_name, uploaded, 'application/octet-stream')},
                 timeout=60,
             )

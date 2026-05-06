@@ -107,22 +107,48 @@ class _JobApplicationsPageState extends State<JobApplicationsPage> {
 
   List<String> _resumeUrlCandidates(String url) {
     final trimmed = url.trim();
-    final candidates = <String>[trimmed];
-    final lower = trimmed.toLowerCase();
+    if (trimmed.isEmpty) return const [];
+
+    var normalized = trimmed;
+    if (!normalized.startsWith('http://') && !normalized.startsWith('https://')) {
+      normalized = 'https://$normalized';
+    }
+
+    final lower = normalized.toLowerCase();
+    final candidates = <String>[];
 
     final isCloudinary = lower.contains('res.cloudinary.com');
+    final isDocument =
+        lower.endsWith('.pdf') || lower.endsWith('.doc') || lower.endsWith('.docx');
 
     if (isCloudinary) {
-      if (trimmed.contains('/image/upload/')) {
-        candidates.add(trimmed.replaceFirst('/image/upload/', '/raw/upload/'));
+      // Some presets generate authenticated/private delivery URLs that return 401.
+      normalized = normalized
+          .replaceFirst('/authenticated/', '/upload/')
+          .replaceFirst('/private/', '/upload/');
+
+      if (isDocument && normalized.contains('/image/upload/')) {
+        normalized = normalized.replaceFirst('/image/upload/', '/raw/upload/');
       }
-      if (trimmed.contains('/raw/upload/')) {
-        candidates.add(trimmed.replaceFirst('/raw/upload/', '/image/upload/'));
+      if (!isDocument && normalized.contains('/raw/upload/')) {
+        normalized = normalized.replaceFirst('/raw/upload/', '/image/upload/');
       }
-      if (trimmed.contains('/upload/')) {
+
+      candidates.add(normalized);
+
+      if (normalized.contains('/upload/')) {
         candidates
-            .add(trimmed.replaceFirst('/upload/', '/upload/fl_attachment/'));
+            .add(normalized.replaceFirst('/upload/', '/upload/fl_attachment/'));
       }
+
+      if (normalized.contains('/image/upload/')) {
+        candidates.add(normalized.replaceFirst('/image/upload/', '/raw/upload/'));
+      }
+      if (normalized.contains('/raw/upload/')) {
+        candidates.add(normalized.replaceFirst('/raw/upload/', '/image/upload/'));
+      }
+    } else {
+      candidates.add(normalized);
     }
 
     return candidates.toSet().toList();
