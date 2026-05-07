@@ -83,16 +83,16 @@ class _JobApplicationsPageState extends State<JobApplicationsPage> {
       final uri = Uri.tryParse(candidate);
       if (uri == null) continue;
 
-      final openedExternal =
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (openedExternal) return;
-
-      final openedDefault =
-          await launchUrl(uri, mode: LaunchMode.platformDefault);
-      if (openedDefault) return;
-
       final openedInApp = await launchUrl(uri, mode: LaunchMode.inAppWebView);
       if (openedInApp) return;
+
+      final openedDefault =
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      if (openedDefault) return;
+
+      final openedExternal =
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (openedExternal) return;
     }
 
     if (!mounted) return;
@@ -121,6 +121,11 @@ class _JobApplicationsPageState extends State<JobApplicationsPage> {
     final isDocument =
         lower.endsWith('.pdf') || lower.endsWith('.doc') || lower.endsWith('.docx');
 
+    if (isDocument) {
+      candidates
+        .add('https://docs.google.com/gview?embedded=1&url=${Uri.encodeComponent(normalized)}');
+    }
+
     if (isCloudinary) {
       // Some presets generate authenticated/private delivery URLs that return 401.
       normalized = normalized
@@ -135,11 +140,6 @@ class _JobApplicationsPageState extends State<JobApplicationsPage> {
       }
 
       candidates.add(normalized);
-
-      if (normalized.contains('/upload/')) {
-        candidates
-            .add(normalized.replaceFirst('/upload/', '/upload/fl_attachment/'));
-      }
 
       if (normalized.contains('/image/upload/')) {
         candidates.add(normalized.replaceFirst('/image/upload/', '/raw/upload/'));
