@@ -32,6 +32,7 @@ class UserProfile {
   final String jobPreference;
   final String resumeUrl;
   final bool notificationsEnabled;
+  final List<String> subscribedCategories;
 
   // Recruiter
   final String companyName;
@@ -66,6 +67,7 @@ class UserProfile {
     this.jobPreference = '',
     this.resumeUrl = '',
     this.notificationsEnabled = true,
+    this.subscribedCategories = const [],
     this.companyName = '',
     this.companyDescription = '',
     this.companyWebsite = '',
@@ -98,6 +100,10 @@ class UserProfile {
       jobPreference: json['job_preference'] ?? '',
       resumeUrl: json['resume_url'] ?? '',
       notificationsEnabled: json['notifications_enabled'] ?? true,
+      subscribedCategories: (json['subscribed_categories'] as List?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
       companyName: json['company_name'] ?? '',
       companyDescription: json['company_description'] ?? '',
       companyWebsite: json['company_website'] ?? '',
@@ -130,6 +136,7 @@ class UserProfile {
     String? jobPreference,
     String? resumeUrl,
     bool? notificationsEnabled,
+    List<String>? subscribedCategories,
     String? companyName,
     String? companyDescription,
     String? companyWebsite,
@@ -160,6 +167,7 @@ class UserProfile {
       jobPreference: jobPreference ?? this.jobPreference,
       resumeUrl: resumeUrl ?? this.resumeUrl,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+      subscribedCategories: subscribedCategories ?? this.subscribedCategories,
       companyName: companyName ?? this.companyName,
       companyDescription: companyDescription ?? this.companyDescription,
       companyWebsite: companyWebsite ?? this.companyWebsite,
@@ -188,6 +196,7 @@ class UserProfile {
         'job_preference': jobPreference,
         'resume_url': resumeUrl,
         'notifications_enabled': notificationsEnabled,
+        'subscribed_categories': subscribedCategories,
         'company_name': companyName,
         'company_description': companyDescription,
         'company_website': companyWebsite,

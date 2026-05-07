@@ -57,6 +57,7 @@ class _SinglePostCardWidgetState extends State<SinglePostCardWidget> {
           jobId: _jobId,
           jobTitle: widget.post.jobTitle ?? '',
           company: widget.post.email ?? '',
+          category: widget.post.jobType ?? '',
           location: widget.post.location ?? '',
           employmentType: widget.post.employmentType ?? '',
           description: widget.post.description ?? '',

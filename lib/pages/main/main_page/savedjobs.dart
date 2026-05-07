@@ -98,6 +98,7 @@ class _SavedJobsPageState extends State<SavedJobsPage> {
                     jobId: job.id.toString(),
                     jobTitle: job.title,
                     company: job.company,
+                    category: job.category,
                     location: job.location,
                     employmentType: job.employmentType,
                     timestamp: job.createdAt?.toLocal().toString() ?? '',

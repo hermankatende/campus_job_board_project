@@ -292,6 +292,7 @@ class _JobsFilterPageState extends State<JobsFilterPage> {
                         timestamp: job.createdAt?.toIso8601String() ?? '',
                         jobTitle: job.title,
                         company: job.company,
+                        category: job.category,
                         location: job.location,
                         employmentType: job.employmentType,
                         description: job.description,

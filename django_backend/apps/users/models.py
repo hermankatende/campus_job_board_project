@@ -33,6 +33,7 @@ class UserProfile(models.Model):
     resume_url = models.URLField(blank=True)
     notifications_enabled = models.BooleanField(default=True)
     fcm_token = models.TextField(blank=True)
+    subscribed_categories = models.JSONField(default=list, blank=True)
 
     # Recruiter-specific fields
     company_name = models.CharField(max_length=200, blank=True)

@@ -1,6 +1,7 @@
 from django.urls import path
 
 from apps.users.views import (
+    CategorySubscriptionsView,
     LecturerVerificationView,
     MeView,
     ResumeUploadView,
@@ -26,4 +27,5 @@ urlpatterns = [
     path("admin/users/<int:pk>/suspend/", UserSuspendView.as_view(), name="admin-user-suspend"),
     path("admin/users/<int:pk>/verify-lecturer/", LecturerVerificationView.as_view(), name="admin-verify-lecturer"),
     path("admin/users/<int:pk>/", UserDeleteView.as_view(), name="admin-user-delete"),
+    path("subscriptions/", CategorySubscriptionsView.as_view(), name="category-subscriptions"),
 ]

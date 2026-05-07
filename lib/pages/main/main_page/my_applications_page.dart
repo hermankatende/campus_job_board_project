@@ -16,7 +16,7 @@ class MyApplicationsPage extends StatefulWidget {
 class _MyApplicationsPageState extends State<MyApplicationsPage> {
   late Future<List<JobApplication>> _appsFuture;
   String _selectedFilter =
-      'all'; // all, applied, reviewed, shortlisted, accepted, rejected
+      'all'; // all, applied, reviewed, shortlisted, hired, rejected
 
   @override
   void initState() {
@@ -113,6 +113,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
         return Colors.orange;
       case 'shortlisted':
         return Colors.purple;
+      case 'hired':
       case 'accepted':
         return Colors.green;
       case 'rejected':
@@ -130,12 +131,31 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
         return Icons.fact_check;
       case 'shortlisted':
         return Icons.star;
+      case 'hired':
       case 'accepted':
         return Icons.check_circle;
       case 'rejected':
         return Icons.cancel;
       default:
         return Icons.help;
+    }
+  }
+
+  int _statusStepIndex(String status) {
+    switch (status.toLowerCase()) {
+      case 'applied':
+        return 0;
+      case 'reviewed':
+        return 1;
+      case 'shortlisted':
+        return 2;
+      case 'hired':
+      case 'accepted':
+        return 3;
+      case 'rejected':
+        return 3;
+      default:
+        return 0;
     }
   }
 
@@ -168,7 +188,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                   _buildFilterChip('applied', 'Applied'),
                   _buildFilterChip('reviewed', 'Reviewed'),
                   _buildFilterChip('shortlisted', 'Shortlisted'),
-                  _buildFilterChip('accepted', 'Accepted'),
+                  _buildFilterChip('hired', 'Hired'),
                   _buildFilterChip('rejected', 'Rejected'),
                 ],
               ),
@@ -353,7 +373,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                       padding:
                           EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.1),
+                        color: statusColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
@@ -391,6 +411,9 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                     ),
                   ],
                 ),
+
+                SizedBox(height: 12),
+                _buildStatusTimeline(app.status),
 
                 if (app.coverLetter.isNotEmpty) ...[
                   SizedBox(height: 12),
@@ -555,6 +578,54 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildStatusTimeline(String status) {
+    final steps = ['Applied', 'Reviewed', 'Shortlisted', 'Hired'];
+    final current = _statusStepIndex(status);
+    final isRejected = status.toLowerCase() == 'rejected';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Tracking',
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            color: Colors.grey[700],
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: List.generate(steps.length * 2 - 1, (i) {
+            if (i.isOdd) {
+              final passed = (i ~/ 2) < current;
+              return Expanded(
+                child: Container(
+                  height: 2,
+                  color: passed
+                      ? (isRejected ? Colors.red.shade300 : Colors.green.shade400)
+                      : Colors.grey.shade300,
+                ),
+              );
+            }
+            final stepIndex = i ~/ 2;
+            final active = stepIndex <= current;
+            return Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: active
+                    ? (isRejected ? Colors.red : Colors.green)
+                    : Colors.grey.shade300,
+                shape: BoxShape.circle,
+              ),
+            );
+          }),
+        ),
+      ],
     );
   }
 }

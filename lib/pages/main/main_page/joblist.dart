@@ -169,6 +169,7 @@ class _JobsListState extends State<JobsList> {
                         timestamp: job.createdAt?.toIso8601String() ?? '',
                         jobTitle: job.title,
                         company: job.company,
+                        category: job.category,
                         location: job.location,
                         employmentType: job.employmentType,
                         description: job.description,

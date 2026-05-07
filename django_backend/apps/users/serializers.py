@@ -31,6 +31,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "resume_url",
             "notifications_enabled",
             "fcm_token",
+            "subscribed_categories",
             # Recruiter
             "company_name",
             "company_description",

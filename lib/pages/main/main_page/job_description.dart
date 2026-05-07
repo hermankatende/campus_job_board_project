@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cjb/pages/main/main_page/apply_page.dart';
 import 'package:cjb/services/jobs_service.dart';
+import 'package:cjb/services/auth_service.dart';
+import 'package:cjb/services/subscriptions_service.dart';
 
 class JobDescription extends StatefulWidget {
   final int jobId;
@@ -21,6 +23,7 @@ class JobDescription extends StatefulWidget {
   final String recruiterContactEmail;
   final String recruiterContactPhone;
   final String recruiterContactCompany;
+  final String category;
 
   const JobDescription({
     required this.jobId,
@@ -37,6 +40,7 @@ class JobDescription extends StatefulWidget {
     this.recruiterContactEmail = '',
     this.recruiterContactPhone = '',
     this.recruiterContactCompany = '',
+    this.category = '',
   });
 
   @override
@@ -46,11 +50,15 @@ class JobDescription extends StatefulWidget {
 class _JobDescriptionState extends State<JobDescription> {
   bool _isSaved = false;
   bool _isSaving = false;
+  bool _isSubscribed = false;
+  bool _isTogglingSubscription = false;
+  bool _isStudent = false;
 
   @override
   void initState() {
     super.initState();
     _loadSavedState();
+    _loadSubscriptionState();
   }
 
   Future<void> _loadSavedState() async {
@@ -62,6 +70,54 @@ class _JobDescriptionState extends State<JobDescription> {
       });
     } catch (_) {
       // Ignore initial saved-state errors and keep the page usable.
+    }
+  }
+
+  Future<void> _loadSubscriptionState() async {
+    final profile = AuthService.instance.currentProfile;
+    if (profile == null || !profile.isStudent || widget.category.isEmpty) return;
+    setState(() => _isStudent = true);
+    try {
+      final cats = await SubscriptionsService.instance.getSubscriptions();
+      if (!mounted) return;
+      setState(() {
+        _isSubscribed =
+            cats.any((c) => c.toLowerCase() == widget.category.toLowerCase());
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _toggleSubscription() async {
+    if (_isTogglingSubscription || widget.category.isEmpty) return;
+    setState(() => _isTogglingSubscription = true);
+    try {
+      final (nowSubscribed, _) =
+          await SubscriptionsService.instance.toggle(widget.category);
+      if (!mounted) return;
+      setState(() => _isSubscribed = nowSubscribed);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            nowSubscribed
+                ? 'Subscribed to "${widget.category}" jobs'
+                : 'Unsubscribed from "${widget.category}" jobs',
+            style: GoogleFonts.poppins(),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Could not update subscription: $e',
+            style: GoogleFonts.poppins(),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isTogglingSubscription = false);
     }
   }
 
@@ -122,6 +178,29 @@ class _JobDescriptionState extends State<JobDescription> {
             ),
             onPressed: _isSaving ? null : _toggleSavedState,
           ),
+          // Subscribe bell — only shown for students
+          if (_isStudent && widget.category.isNotEmpty)
+            _isTogglingSubscription
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                : IconButton(
+                    tooltip: _isSubscribed
+                        ? 'Unsubscribe from ${widget.category} jobs'
+                        : 'Subscribe to ${widget.category} jobs',
+                    icon: Icon(
+                      _isSubscribed
+                          ? Icons.notifications_active
+                          : Icons.notifications_none,
+                      color: _isSubscribed ? Colors.orange : Colors.black,
+                    ),
+                    onPressed: _toggleSubscription,
+                  ),
         ],
       ),
       body: SingleChildScrollView(
@@ -443,6 +522,7 @@ class Description extends StatelessWidget {
       jobId: jobId,
       jobTitle: jobTitle,
       company: company,
+      category: '',
       location: location,
       employmentType: employmentType,
       description: description,

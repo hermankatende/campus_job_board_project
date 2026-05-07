@@ -90,7 +90,35 @@ class ApplicationDetailView(generics.RetrieveUpdateDestroyAPIView):
 
         serializer.save()
 
-    def perform_destroy(self, instance):
+        # ── Push notification: alert applicant when their status changes ──
+        try:
+            new_status = serializer.validated_data.get("status")
+            if new_status and application.applicant.notifications_enabled:
+                token = application.applicant.fcm_token or ""
+                if token.strip():
+                    from apps.common.fcm import send_fcm_push  # noqa: PLC0415
+                    status_labels = {
+                        "applied": "Applied",
+                        "reviewed": "Under Review",
+                        "shortlisted": "Shortlisted 🎉",
+                        "rejected": "Not Selected",
+                        "hired": "Hired 🎊",
+                    }
+                    label = status_labels.get(new_status, new_status.title())
+                    send_fcm_push(
+                        token,
+                        title=f"Application Update: {label}",
+                        body=f"Your application for {application.job.title} at {application.job.company} is now: {label}",
+                        data={
+                            "type": "status_update",
+                            "application_id": str(application.id),
+                            "job_id": str(application.job.id),
+                            "new_status": new_status,
+                        },
+                    )
+        except Exception as exc:  # noqa: BLE001
+            import logging
+            logging.getLogger(__name__).warning("Status-change FCM error: %s", exc)
         uid = getattr(self.request, "firebase_user", {}).get("uid")
         is_owner = instance.applicant.firebase_uid == uid
         is_job_owner = instance.job.posted_by.firebase_uid == uid

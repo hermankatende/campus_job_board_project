@@ -41,6 +41,7 @@ class JobSearchResults extends StatelessWidget {
                 timestamp: job.createdAt?.toLocal().toString() ?? '',
                 jobTitle: job.title,
                 company: job.company,
+                category: job.category,
                 location: job.location,
                 employmentType: job.employmentType,
                 description: job.description,

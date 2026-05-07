@@ -132,18 +132,22 @@ class ApiClient {
     return _handleResponse(response);
   }
 
-  Future<dynamic> delete(String path, {bool auth = true}) async {
+  Future<dynamic> delete(String path,
+      {bool auth = true, Map<String, dynamic>? body}) async {
     _assertConfigured();
     var headers = await _headers(auth: auth);
+    final encoded = body != null ? jsonEncode(body) : null;
     var response = await _send(() => http.delete(
           Uri.parse('$_baseUrl$path'),
           headers: headers,
+          body: encoded,
         ));
     if (auth && (response.statusCode == 401 || response.statusCode == 403)) {
       headers = await _headers(auth: auth, forceTokenRefresh: true);
       response = await _send(() => http.delete(
             Uri.parse('$_baseUrl$path'),
             headers: headers,
+            body: encoded,
           ));
     }
     return _handleResponse(response);

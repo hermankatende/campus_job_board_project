@@ -339,3 +339,50 @@ class UserDeleteView(APIView):
 
         target.delete()
         return Response({"status": "deleted"})
+
+
+class CategorySubscriptionsView(APIView):
+    """GET/POST/DELETE /api/users/subscriptions/
+    Manages a student's job-category subscriptions.
+
+    GET  → returns {"subscribed_categories": [...]}
+    POST → body {"category": "IT"} — adds category to subscriptions
+    DELETE → body {"category": "IT"} — removes category from subscriptions
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def _get_profile(self, request):
+        uid = getattr(request, "firebase_user", {}).get("uid")
+        profile = UserProfile.objects.filter(firebase_uid=uid).first()
+        if not profile:
+            raise ValidationError("Profile not found.")
+        return profile
+
+    def get(self, request):
+        profile = self._get_profile(request)
+        cats = profile.subscribed_categories or []
+        return Response({"subscribed_categories": cats})
+
+    def post(self, request):
+        category = (request.data.get("category") or "").strip()
+        if not category:
+            return Response({"error": "category is required"}, status=400)
+        profile = self._get_profile(request)
+        cats = list(profile.subscribed_categories or [])
+        existing = [c.lower() for c in cats]
+        if category.lower() not in existing:
+            cats.append(category)
+            profile.subscribed_categories = cats
+            profile.save(update_fields=["subscribed_categories", "updated_at"])
+        return Response({"subscribed_categories": profile.subscribed_categories})
+
+    def delete(self, request):
+        category = (request.data.get("category") or "").strip()
+        if not category:
+            return Response({"error": "category is required"}, status=400)
+        profile = self._get_profile(request)
+        cats = [c for c in (profile.subscribed_categories or []) if c.lower() != category.lower()]
+        profile.subscribed_categories = cats
+        profile.save(update_fields=["subscribed_categories", "updated_at"])
+        return Response({"subscribed_categories": profile.subscribed_categories})

@@ -74,7 +74,55 @@ class JobListCreateView(generics.ListCreateAPIView):
         }:
             raise PermissionDenied("Only recruiters, lecturers, and admins can post jobs.")
 
-        serializer.save(posted_by=profile)
+        job = serializer.save(posted_by=profile)
+
+        # ── Push notification: alert students subscribed to this job's category ──
+        try:
+            from apps.common.fcm import send_fcm_multicast  # noqa: PLC0415
+            category = (job.category or "").strip()
+            if category:
+                tokens = list(
+                    UserProfile.objects.filter(
+                        role=UserProfile.Role.STUDENT,
+                        notifications_enabled=True,
+                    )
+                    .exclude(fcm_token="")
+                    .values_list("fcm_token", "subscribed_categories")
+                )
+                # Filter to students who subscribed to this category
+                matched = [
+                    t for t, cats in tokens
+                    if isinstance(cats, list) and any(
+                        c.strip().lower() == category.lower() for c in cats
+                    )
+                ]
+                if matched:
+                    send_fcm_multicast(
+                        matched,
+                        title=f"New {category} job posted!",
+                        body=f"{job.title} at {job.company}",
+                        data={"type": "new_job", "job_id": str(job.id)},
+                    )
+
+            # Also notify admin(s) about every new job
+            admin_tokens = list(
+                UserProfile.objects.filter(
+                    role=UserProfile.Role.ADMIN,
+                    notifications_enabled=True,
+                )
+                .exclude(fcm_token="")
+                .values_list("fcm_token", flat=True)
+            )
+            if admin_tokens:
+                send_fcm_multicast(
+                    admin_tokens,
+                    title="New job posted",
+                    body=f"{job.title} at {job.company} ({category})",
+                    data={"type": "new_job", "job_id": str(job.id)},
+                )
+        except Exception as exc:  # noqa: BLE001
+            import logging
+            logging.getLogger(__name__).warning("Post-job FCM error: %s", exc)
 
 
 class JobDetailView(generics.RetrieveUpdateDestroyAPIView):

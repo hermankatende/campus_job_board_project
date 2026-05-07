@@ -22,6 +22,7 @@ class JobCard extends StatelessWidget {
   final String recruiterContactEmail;
   final String recruiterContactPhone;
   final String recruiterContactCompany;
+  final String category;
 
   JobCard({
     required this.jobId,
@@ -38,6 +39,7 @@ class JobCard extends StatelessWidget {
     this.recruiterContactEmail = '',
     this.recruiterContactPhone = '',
     this.recruiterContactCompany = '',
+    this.category = '',
   });
 
   void _openApplyPage(BuildContext context) {
@@ -134,6 +136,7 @@ class JobCard extends StatelessWidget {
                 jobId: parsedJobId,
                 jobTitle: jobTitle,
                 company: company,
+                category: category,
                 location: location,
                 employmentType: employmentType,
                 description: description,

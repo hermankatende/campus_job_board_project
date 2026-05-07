@@ -115,6 +115,16 @@ class _MyAppState extends State<MyApp> {
     });
 
     _storeFCMToken();
+
+    // Token can rotate; keep backend in sync for reliable pushes.
+    FirebaseMessaging.instance.onTokenRefresh.listen((token) async {
+      try {
+        await AuthService.instance.saveFcmToken(token);
+        print('Refreshed FCM token synced');
+      } catch (e) {
+        print('Failed to sync refreshed FCM token: $e');
+      }
+    });
   }
 
   void _requestPermissions() async {
@@ -177,9 +187,23 @@ class _MyAppState extends State<MyApp> {
       await box.add({
         'title': notification.title,
         'body': notification.body,
+        'type': _notificationTypeFromTitle(notification.title ?? ''),
+        'created_at': DateTime.now().toIso8601String(),
+        'is_read': false,
       });
       print('Notification saved: ${notification.title} - ${notification.body}');
     }
+  }
+
+  String _notificationTypeFromTitle(String title) {
+    final value = title.toLowerCase();
+    if (value.contains('application update') || value.contains('status')) {
+      return 'status_update';
+    }
+    if (value.contains('new') && value.contains('job')) {
+      return 'new_job';
+    }
+    return 'general';
   }
 
   @override
