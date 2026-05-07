@@ -55,8 +55,8 @@ class ResumeUploadView(APIView):
                 status=500,
             )
 
-        image_exts = {'.jpg', '.jpeg', '.png'}
-        resource_type = 'image' if ext in image_exts else 'raw'
+        # Let Cloudinary infer the correct type for documents/images.
+        resource_type = 'auto'
 
         firebase_user = getattr(request, 'firebase_user', {})
         uid = firebase_user.get('uid', 'anonymous')
