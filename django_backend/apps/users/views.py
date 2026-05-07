@@ -68,7 +68,6 @@ class ResumeUploadView(APIView):
                 data={
                     'upload_preset': upload_preset,
                     'folder': f'resumes/{uid}',
-                    'type': 'upload',
                 },
                 files={'file': (original_name, uploaded, 'application/octet-stream')},
                 timeout=60,
