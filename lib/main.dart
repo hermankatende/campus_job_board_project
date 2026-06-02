@@ -29,6 +29,11 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
+const String _jobPostingsChannelId = 'job_postings_channel';
+const String _jobPostingsChannelName = 'Job Postings';
+const String _jobPostingsChannelDescription =
+    'Notifications about new job postings';
+const String _openJobsPayload = 'open_jobs';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -58,8 +63,7 @@ Future<void> main() async {
     await flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) async {
-        if (response.payload != null) {
-          // Navigate to JobsList on notification click
+        if (response.payload == _openJobsPayload) {
           navigatorKey.currentState?.push(MaterialPageRoute(
             builder: (context) => JobsList(),
           ));
@@ -89,16 +93,13 @@ class _MyAppState extends State<MyApp> {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       // Handle foreground message
       print('Received a foreground message: ${message.messageId}');
-      _showNotification(message.notification);
-      print('Now saving to local ');
-      _saveNotificationToLocal(message.notification);
+      _handleIncomingMessage(message, showLocalNotification: true);
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       // Handle background message when the app is opened from notification
-      navigatorKey.currentState?.push(MaterialPageRoute(
-        builder: (context) => JobsList(),
-      ));
+      _handleMessageTap();
+      _saveNotificationToLocal(message);
       print('Message clicked!');
     });
 
@@ -107,9 +108,8 @@ class _MyAppState extends State<MyApp> {
         .then((RemoteMessage? message) {
       if (message != null) {
         // Handle initial message when the app is opened directly from the notification
-        navigatorKey.currentState?.push(MaterialPageRoute(
-          builder: (context) => JobsList(),
-        ));
+        _handleMessageTap();
+        _saveNotificationToLocal(message);
         print('Received an initial message: ${message.messageId}');
       }
     });
@@ -154,14 +154,30 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  Future<void> _showNotification(RemoteNotification? notification) async {
-    if (notification != null) {
+  void _handleIncomingMessage(
+    RemoteMessage message, {
+    required bool showLocalNotification,
+  }) {
+    final notification = message.notification;
+    if (showLocalNotification && !kIsWeb && notification != null) {
+      _showNotification(notification);
+    }
+    _saveNotificationToLocal(message);
+  }
+
+  void _handleMessageTap() {
+    navigatorKey.currentState?.push(MaterialPageRoute(
+      builder: (context) => JobsList(),
+    ));
+  }
+
+  Future<void> _showNotification(RemoteNotification notification) async {
+    if (!kIsWeb) {
       const AndroidNotificationDetails androidPlatformChannelSpecifics =
           AndroidNotificationDetails(
-        'job_postings_channel', // Channel ID
-        'Job Postings', // Channel Name
-        channelDescription:
-            'Notifications about new job postings', // Channel Description
+        _jobPostingsChannelId,
+        _jobPostingsChannelName,
+        channelDescription: _jobPostingsChannelDescription,
         importance: Importance.max,
         priority: Priority.high,
         showWhen: false,
@@ -174,29 +190,48 @@ class _MyAppState extends State<MyApp> {
         notification.title,
         notification.body,
         platformChannelSpecifics,
+        payload: _openJobsPayload,
       );
       print('Notification shown: ${notification.title} - ${notification.body}');
-    } else {
-      print('No notification to show');
     }
   }
 
-  void _saveNotificationToLocal(RemoteNotification? notification) async {
-    if (notification != null) {
-      Box box = Hive.box('notifications');
-      await box.add({
-        'title': notification.title,
-        'body': notification.body,
-        'type': _notificationTypeFromTitle(notification.title ?? ''),
-        'created_at': DateTime.now().toIso8601String(),
-        'is_read': false,
-      });
-      print('Notification saved: ${notification.title} - ${notification.body}');
+  void _saveNotificationToLocal(RemoteMessage message) async {
+    final title = message.notification?.title ??
+        (message.data['title']?.toString() ?? '');
+    final body =
+        message.notification?.body ?? (message.data['body']?.toString() ?? '');
+    final messageId = message.messageId;
+
+    if (title.isEmpty && body.isEmpty) {
+      return;
     }
+
+    final Box box = Hive.box('notifications');
+
+    if (messageId != null) {
+      for (var i = 0; i < box.length; i++) {
+        final dynamic raw = box.getAt(i);
+        if (raw is Map && raw['message_id'] == messageId) {
+          return;
+        }
+      }
+    }
+
+    await box.add({
+      'message_id': messageId,
+      'title': title,
+      'body': body,
+      'type': _notificationTypeFromTitle(title, body),
+      'created_at': DateTime.now().toIso8601String(),
+      'is_read': false,
+    });
+
+    print('Notification saved: $title - $body');
   }
 
-  String _notificationTypeFromTitle(String title) {
-    final value = title.toLowerCase();
+  String _notificationTypeFromTitle(String title, String body) {
+    final value = '$title $body'.toLowerCase();
     if (value.contains('application update') || value.contains('status')) {
       return 'status_update';
     }
@@ -245,16 +280,54 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   print('Handling a background message: ${message.messageId}');
 
-  // Display notification
-  RemoteNotification? notification = message.notification;
-  AndroidNotification? android = message.notification?.android;
-  if (notification != null && android != null) {
+  final title =
+      message.notification?.title ?? (message.data['title']?.toString() ?? '');
+  final body =
+      message.notification?.body ?? (message.data['body']?.toString() ?? '');
+
+  if (title.isNotEmpty || body.isNotEmpty) {
+    if (!Hive.isBoxOpen('notifications')) {
+      if (kIsWeb) {
+        await Hive.initFlutter();
+      } else {
+        final appDocumentDir = await getApplicationDocumentsDirectory();
+        await Hive.initFlutter(appDocumentDir.path);
+      }
+      await Hive.openBox('notifications');
+    }
+
+    final box = Hive.box('notifications');
+    final messageId = message.messageId;
+    var alreadySaved = false;
+    if (messageId != null) {
+      for (var i = 0; i < box.length; i++) {
+        final dynamic raw = box.getAt(i);
+        if (raw is Map && raw['message_id'] == messageId) {
+          alreadySaved = true;
+          break;
+        }
+      }
+    }
+
+    if (!alreadySaved) {
+      await box.add({
+        'message_id': messageId,
+        'title': title,
+        'body': body,
+        'type': 'general',
+        'created_at': DateTime.now().toIso8601String(),
+        'is_read': false,
+      });
+    }
+  }
+
+  final notification = message.notification;
+  if (notification != null && !kIsWeb) {
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
-      'job_postings_channel', // Channel ID
-      'Job Postings', // Channel Name
-      channelDescription:
-          'Notifications about new job postings', // Channel Description
+      _jobPostingsChannelId,
+      _jobPostingsChannelName,
+      channelDescription: _jobPostingsChannelDescription,
       importance: Importance.max,
       priority: Priority.high,
       showWhen: false,
@@ -267,6 +340,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       notification.title,
       notification.body,
       platformChannelSpecifics,
+      payload: _openJobsPayload,
     );
     print(
         'Background notification shown: ${notification.title} - ${notification.body}');
