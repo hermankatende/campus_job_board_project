@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.utils import timezone
 
 from apps.jobs.models import Job, SavedJob
 
@@ -44,7 +45,21 @@ class JobSerializer(serializers.ModelSerializer):
             "recruiter_contact_email",
             "recruiter_contact_phone",
             "recruiter_contact_company",
+            "application_deadline",
+            "deadline_reminder_sent_at",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "posted_by_id", "posted_by_name", "created_at", "updated_at"]
+        read_only_fields = [
+            "id",
+            "posted_by_id",
+            "posted_by_name",
+            "deadline_reminder_sent_at",
+            "created_at",
+            "updated_at",
+        ]
+
+    def validate_application_deadline(self, value):
+        if value and value <= timezone.now():
+            raise serializers.ValidationError("Application deadline must be in the future.")
+        return value

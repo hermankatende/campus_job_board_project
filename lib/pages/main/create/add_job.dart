@@ -50,6 +50,7 @@ class _AddAjobState extends State<AddAjob> {
   final ImagePicker _imagePicker = ImagePicker();
 
   File? _selectedImage;
+  DateTime? _selectedDeadline;
   bool _isPosting = false;
 
   Future<void> _notifyUsers(String jobCategory) async {
@@ -94,6 +95,29 @@ class _AddAjobState extends State<AddAjob> {
         SnackBar(content: Text('Failed to pick image: $error')),
       );
     }
+  }
+
+  Future<void> _pickDeadline() async {
+    final now = DateTime.now();
+    final initialDate = _selectedDeadline ?? now.add(const Duration(days: 7));
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365)),
+    );
+
+    if (pickedDate == null || !mounted) return;
+
+    setState(() {
+      _selectedDeadline = DateTime(
+        pickedDate.year,
+        pickedDate.month,
+        pickedDate.day,
+        23,
+        59,
+      );
+    });
   }
 
   @override
@@ -179,6 +203,8 @@ class _AddAjobState extends State<AddAjob> {
                 SizedBox(height: 30),
                 buildEmploymentTypeInputField(context),
                 SizedBox(height: 30),
+                _buildDeadlinePicker(),
+                SizedBox(height: 30),
                 buildInputField(
                   context,
                   'Description',
@@ -244,11 +270,12 @@ class _AddAjobState extends State<AddAjob> {
         companyController.text.isEmpty ||
         employmentTypeController.text.isEmpty ||
         descriptionController.text.isEmpty ||
-        categoryController.text.isEmpty) {
+        categoryController.text.isEmpty ||
+        _selectedDeadline == null) {
       // Show an error message if any field is empty
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please fill in all fields'),
+          content: Text('Please fill in all fields and pick a deadline'),
         ),
       );
       return false;
@@ -273,6 +300,7 @@ class _AddAjobState extends State<AddAjob> {
         employmentType: employmentTypeController.text,
         description: descriptionController.text,
         category: categoryController.text,
+        applicationDeadline: _selectedDeadline,
         imageUrl: imageUrl,
         recruiterContactName: _recruiterNameController.text,
         recruiterContactEmail: _recruiterEmailController.text,
@@ -300,6 +328,7 @@ class _AddAjobState extends State<AddAjob> {
     _recruiterCompanyController.clear();
     setState(() {
       _selectedImage = null;
+      _selectedDeadline = null;
       _isPosting = false;
       _showRecruiterSection = false;
     });
@@ -400,6 +429,70 @@ class _AddAjobState extends State<AddAjob> {
                     ],
                   ),
                 ],
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDeadlinePicker() {
+    String deadlineText = 'Tap to select application deadline';
+    if (_selectedDeadline != null) {
+      final y = _selectedDeadline!.year.toString().padLeft(4, '0');
+      final m = _selectedDeadline!.month.toString().padLeft(2, '0');
+      final d = _selectedDeadline!.day.toString().padLeft(2, '0');
+      deadlineText = '$y-$m-$d';
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Application Deadline',
+          style: GoogleFonts.dmSans(
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
+            color: const Color(0xFF150B3D),
+          ),
+        ),
+        const SizedBox(height: 12),
+        InkWell(
+          onTap: _isPosting ? null : _pickDeadline,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.calendar_month_outlined,
+                    color: Colors.grey.shade700),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    deadlineText,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 14,
+                      color: _selectedDeadline == null
+                          ? Colors.grey.shade700
+                          : const Color(0xFF150B3D),
+                    ),
+                  ),
+                ),
+                if (_selectedDeadline != null)
+                  IconButton(
+                    onPressed: _isPosting
+                        ? null
+                        : () => setState(() => _selectedDeadline = null),
+                    icon: const Icon(Icons.close, size: 18),
+                    tooltip: 'Clear deadline',
+                  ),
               ],
             ),
           ),

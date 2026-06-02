@@ -34,6 +34,8 @@ class Job(models.Model):
     recruiter_contact_email = models.EmailField(blank=True)
     recruiter_contact_phone = models.CharField(max_length=50, blank=True)
     recruiter_contact_company = models.CharField(max_length=200, blank=True)
+    application_deadline = models.DateTimeField(null=True, blank=True)
+    deadline_reminder_sent_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

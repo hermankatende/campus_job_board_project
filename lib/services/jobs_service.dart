@@ -38,6 +38,7 @@ class AppJob {
   final String recruiterContactEmail;
   final String recruiterContactPhone;
   final String recruiterContactCompany;
+  final DateTime? applicationDeadline;
   final DateTime? createdAt;
 
   const AppJob({
@@ -58,6 +59,7 @@ class AppJob {
     this.recruiterContactEmail = '',
     this.recruiterContactPhone = '',
     this.recruiterContactCompany = '',
+    this.applicationDeadline,
     this.createdAt,
   });
 
@@ -84,6 +86,9 @@ class AppJob {
       recruiterContactEmail: json['recruiter_contact_email'] ?? '',
       recruiterContactPhone: json['recruiter_contact_phone'] ?? '',
       recruiterContactCompany: json['recruiter_contact_company'] ?? '',
+      applicationDeadline: json['application_deadline'] != null
+          ? DateTime.tryParse(json['application_deadline'])
+          : null,
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'])
           : null,
@@ -176,6 +181,7 @@ class JobsService {
     required String employmentType,
     String imageUrl = '',
     String requirements = '',
+    DateTime? applicationDeadline,
     String recruiterContactName = '',
     String recruiterContactEmail = '',
     String recruiterContactPhone = '',
@@ -191,6 +197,8 @@ class JobsService {
       'employment_type': employmentType,
       'image_url': imageUrl,
       'status': 'open',
+      if (applicationDeadline != null)
+        'application_deadline': applicationDeadline.toUtc().toIso8601String(),
       if (recruiterContactName.trim().isNotEmpty)
         'recruiter_contact_name': recruiterContactName.trim(),
       if (recruiterContactEmail.trim().isNotEmpty)

@@ -1,3 +1,5 @@
+import logging
+
 from django.db.models import Q
 from django.utils import timezone
 from rest_framework import generics
@@ -12,11 +14,117 @@ from apps.jobs.serializers import JobSerializer, SavedJobSerializer
 from apps.users.models import UserProfile
 
 
+logger = logging.getLogger(__name__)
+
+
+def _matches_category(subscribed_categories, job_preference_value, category: str) -> bool:
+    normalized = category.lower()
+
+    if isinstance(subscribed_categories, list):
+        for item in subscribed_categories:
+            if str(item).strip().lower() == normalized:
+                return True
+
+    if isinstance(job_preference_value, str):
+        for item in job_preference_value.split(","):
+            if item.strip().lower() == normalized:
+                return True
+
+    return False
+
+
+def _subscribed_student_tokens_for_category(category: str) -> list[str]:
+    recipients = list(
+        UserProfile.objects.filter(
+            role=UserProfile.Role.STUDENT,
+            notifications_enabled=True,
+        )
+        .exclude(fcm_token="")
+        .values_list("fcm_token", "subscribed_categories", "job_preference")
+    )
+
+    return list(
+        {
+            token
+            for token, cats, job_preference in recipients
+            if _matches_category(cats, job_preference, category)
+        }
+    )
+
+
+def _auto_close_expired_jobs(now):
+    Job.objects.filter(
+        is_deleted=False,
+        status=Job.Status.OPEN,
+        application_deadline__isnull=False,
+        application_deadline__lte=now,
+    ).update(status=Job.Status.CLOSED)
+
+
+def _send_deadline_soon_reminders(now):
+    soon_cutoff = now + timezone.timedelta(days=1)
+    jobs = list(
+        Job.objects.filter(
+            is_deleted=False,
+            status=Job.Status.OPEN,
+            application_deadline__isnull=False,
+            application_deadline__gt=now,
+            application_deadline__lte=soon_cutoff,
+            deadline_reminder_sent_at__isnull=True,
+        )
+    )
+
+    if not jobs:
+        return
+
+    try:
+        from apps.common.fcm import send_fcm_multicast  # noqa: PLC0415
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Deadline reminder FCM import error: %s", exc)
+        return
+
+    for job in jobs:
+        category = (job.category or "").strip()
+        if not category:
+            job.deadline_reminder_sent_at = now
+            job.save(update_fields=["deadline_reminder_sent_at", "updated_at"])
+            continue
+
+        tokens = _subscribed_student_tokens_for_category(category)
+        if tokens:
+            local_deadline = timezone.localtime(job.application_deadline)
+            send_fcm_multicast(
+                tokens,
+                title=f"Deadline Soon: {job.title}",
+                body=(
+                    f"Applications for {job.title} at {job.company} close on "
+                    f"{local_deadline.strftime('%Y-%m-%d %H:%M')}."
+                ),
+                data={
+                    "type": "deadline_soon",
+                    "job_id": str(job.id),
+                    "category": category,
+                    "application_deadline": job.application_deadline.isoformat(),
+                },
+            )
+
+        job.deadline_reminder_sent_at = now
+        job.save(update_fields=["deadline_reminder_sent_at", "updated_at"])
+
+
+def _run_deadline_automation():
+    now = timezone.now()
+    _auto_close_expired_jobs(now)
+    _send_deadline_soon_reminders(now)
+
+
 class JobListCreateView(generics.ListCreateAPIView):
     serializer_class = JobSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        _run_deadline_automation()
+
         queryset = Job.objects.select_related("posted_by").filter(is_deleted=False)
 
         uid = getattr(self.request, "firebase_user", {}).get("uid")
@@ -30,9 +138,12 @@ class JobListCreateView(generics.ListCreateAPIView):
         posted_by_role = self.request.query_params.get("posted_by_role", "").strip().lower()
         remote = self.request.query_params.get("remote", "").strip().lower()
 
-        # Students should only see open jobs by default.
-        if current_profile and current_profile.role == UserProfile.Role.STUDENT and not status:
-            queryset = queryset.filter(status=Job.Status.OPEN)
+        # Students should only see open, non-expired jobs.
+        if current_profile and current_profile.role == UserProfile.Role.STUDENT:
+            queryset = queryset.filter(status=Job.Status.OPEN).filter(
+                Q(application_deadline__isnull=True)
+                | Q(application_deadline__gt=timezone.now())
+            )
 
         if search:
             queryset = queryset.filter(
@@ -81,39 +192,7 @@ class JobListCreateView(generics.ListCreateAPIView):
             from apps.common.fcm import send_fcm_multicast  # noqa: PLC0415
             category = (job.category or "").strip()
             if category:
-                recipients = list(
-                    UserProfile.objects.filter(
-                        role=UserProfile.Role.STUDENT,
-                        notifications_enabled=True,
-                    )
-                    .exclude(fcm_token="")
-                    .values_list("fcm_token", "subscribed_categories", "job_preference")
-                )
-
-                def _matches_category(subscribed_categories, job_preference_value):
-                    normalized = category.lower()
-
-                    if isinstance(subscribed_categories, list):
-                        for item in subscribed_categories:
-                            if str(item).strip().lower() == normalized:
-                                return True
-
-                    if isinstance(job_preference_value, str):
-                        for item in job_preference_value.split(","):
-                            if item.strip().lower() == normalized:
-                                return True
-
-                    return False
-
-                # Filter to students who subscribed to this category.
-                # Falls back to legacy `job_preference` for older accounts.
-                matched = list(
-                    {
-                        token
-                        for token, cats, job_preference in recipients
-                        if _matches_category(cats, job_preference)
-                    }
-                )
+                matched = _subscribed_student_tokens_for_category(category)
                 if matched:
                     send_fcm_multicast(
                         matched,
@@ -139,8 +218,7 @@ class JobListCreateView(generics.ListCreateAPIView):
                     data={"type": "new_job", "job_id": str(job.id)},
                 )
         except Exception as exc:  # noqa: BLE001
-            import logging
-            logging.getLogger(__name__).warning("Post-job FCM error: %s", exc)
+            logger.warning("Post-job FCM error: %s", exc)
 
 
 class JobDetailView(generics.RetrieveUpdateDestroyAPIView):
