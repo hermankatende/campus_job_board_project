@@ -133,6 +133,24 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
                 SizedBox(height: 8),
+                _buildSection(
+                  title: 'Basic Information',
+                  children: [
+                    _buildInfoRow('Role', profile.role),
+                    _buildDivider(),
+                    _buildInfoRow('Phone',
+                        profile.phone.isEmpty ? 'Not set' : profile.phone),
+                    _buildDivider(),
+                    _buildInfoRow('Gender',
+                        profile.gender.isEmpty ? 'Not set' : profile.gender),
+                    _buildDivider(),
+                    _buildInfoRow(
+                        'Age Range',
+                        profile.ageRange.isEmpty
+                            ? 'Not set'
+                            : profile.ageRange),
+                  ],
+                ),
                 if (profile.college.isNotEmpty || profile.program.isNotEmpty)
                   _buildSection(
                     title: 'Academic Information',
@@ -144,6 +162,49 @@ class _ProfilePageState extends State<ProfilePage> {
                         _buildDivider(),
                         _buildInfoRow('Student Number', profile.studentNumber),
                       ],
+                    ],
+                  ),
+                if (profile.companyName.isNotEmpty ||
+                    profile.companyDescription.isNotEmpty ||
+                    profile.companyWebsite.isNotEmpty ||
+                    profile.companyLocation.isNotEmpty)
+                  _buildSection(
+                    title: 'Company Information',
+                    children: [
+                      if (profile.companyName.isNotEmpty) ...[
+                        _buildInfoRow('Company Name', profile.companyName),
+                        _buildDivider(),
+                      ],
+                      if (profile.companyDescription.isNotEmpty) ...[
+                        _buildTitleValue(
+                            'Company Description', profile.companyDescription),
+                        _buildDivider(),
+                      ],
+                      if (profile.companyWebsite.isNotEmpty) ...[
+                        _buildLinkRow(
+                            'Company Website', profile.companyWebsite),
+                        _buildDivider(),
+                      ],
+                      if (profile.companyLocation.isNotEmpty)
+                        _buildInfoRow(
+                            'Company Location', profile.companyLocation),
+                    ],
+                  ),
+                if (profile.department.isNotEmpty || profile.isLecturer)
+                  _buildSection(
+                    title: 'Lecturer Information',
+                    children: [
+                      _buildInfoRow(
+                        'Department',
+                        profile.department.isEmpty
+                            ? 'Not set'
+                            : profile.department,
+                      ),
+                      _buildDivider(),
+                      _buildInfoRow(
+                        'Verification',
+                        profile.isVerified ? 'Verified' : 'Pending',
+                      ),
                     ],
                   ),
                 if (profile.skills.isNotEmpty ||

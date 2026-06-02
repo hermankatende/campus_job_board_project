@@ -17,13 +17,23 @@ class Profile extends StatefulWidget {
 
 class _ProfileState extends State<Profile> {
   final Map<String, TextEditingController> _controllers = {
+    'Full name': TextEditingController(),
+    'Phone': TextEditingController(),
     'About me': TextEditingController(),
     'Work experience': TextEditingController(),
     'Education': TextEditingController(),
     'Skills': TextEditingController(),
     'Hobbies/interests': TextEditingController(),
     'Portfolio url': TextEditingController(),
-    'job preference': TextEditingController(),
+    'Job preference': TextEditingController(),
+    'College': TextEditingController(),
+    'Program': TextEditingController(),
+    'Student number': TextEditingController(),
+    'Company name': TextEditingController(),
+    'Company description': TextEditingController(),
+    'Company website': TextEditingController(),
+    'Company location': TextEditingController(),
+    'Department': TextEditingController(),
   };
 
   File? _profileImage;
@@ -32,6 +42,7 @@ class _ProfileState extends State<Profile> {
 
   String? _selectedGender;
   String? _selectedAgeRange;
+  String _role = '';
 
   @override
   void initState() {
@@ -46,16 +57,27 @@ class _ProfileState extends State<Profile> {
   Future<void> _fetchProfileData() async {
     try {
       final profile = await AuthService.instance.syncProfile();
+      _controllers['Full name']?.text = profile.fullName;
+      _controllers['Phone']?.text = profile.phone;
       _controllers['About me']?.text = profile.aboutMe;
       _controllers['Work experience']?.text = profile.workExperience;
       _controllers['Education']?.text = profile.education;
       _controllers['Skills']?.text = profile.skills;
       _controllers['Hobbies/interests']?.text = profile.hobbiesInterests;
       _controllers['Portfolio url']?.text = profile.portfolioUrl;
-      _controllers['job preference']?.text = profile.jobPreference;
+      _controllers['Job preference']?.text = profile.jobPreference;
+      _controllers['College']?.text = profile.college;
+      _controllers['Program']?.text = profile.program;
+      _controllers['Student number']?.text = profile.studentNumber;
+      _controllers['Company name']?.text = profile.companyName;
+      _controllers['Company description']?.text = profile.companyDescription;
+      _controllers['Company website']?.text = profile.companyWebsite;
+      _controllers['Company location']?.text = profile.companyLocation;
+      _controllers['Department']?.text = profile.department;
       _selectedGender = profile.gender.isNotEmpty ? profile.gender : null;
       _selectedAgeRange = profile.ageRange.isNotEmpty ? profile.ageRange : null;
       _existingImageUrl = profile.imageUrl;
+      _role = profile.role;
       if (mounted) {
         setState(() {});
       }
@@ -95,6 +117,8 @@ class _ProfileState extends State<Profile> {
       }
 
       await AuthService.instance.updateProfile({
+        'full_name': _controllers['Full name']?.text,
+        'phone': _controllers['Phone']?.text,
         if (downloadURL != null) 'image_url': downloadURL,
         'about_me': _controllers['About me']?.text,
         'work_experience': _controllers['Work experience']?.text,
@@ -102,7 +126,20 @@ class _ProfileState extends State<Profile> {
         'skills': _controllers['Skills']?.text,
         'hobbies_interests': _controllers['Hobbies/interests']?.text,
         'portfolio_url': _controllers['Portfolio url']?.text,
-        'job_preference': _controllers['job preference']?.text,
+        'job_preference': _controllers['Job preference']?.text,
+        if (_role == 'student') 'college': _controllers['College']?.text,
+        if (_role == 'student') 'program': _controllers['Program']?.text,
+        if (_role == 'student')
+          'student_number': _controllers['Student number']?.text,
+        if (_role == 'recruiter')
+          'company_name': _controllers['Company name']?.text,
+        if (_role == 'recruiter')
+          'company_description': _controllers['Company description']?.text,
+        if (_role == 'recruiter')
+          'company_website': _controllers['Company website']?.text,
+        if (_role == 'recruiter')
+          'company_location': _controllers['Company location']?.text,
+        if (_role == 'lecturer') 'department': _controllers['Department']?.text,
         'gender': _selectedGender ?? '',
         'age_range': _selectedAgeRange ?? '',
       });
@@ -181,6 +218,16 @@ class _ProfileState extends State<Profile> {
               ),
               _buildProfileListTile(
                 context,
+                'Full name',
+                Icon(Icons.badge_outlined),
+              ),
+              _buildProfileListTile(
+                context,
+                'Phone',
+                Icon(Icons.phone_outlined),
+              ),
+              _buildProfileListTile(
+                context,
                 'About me',
                 Icon(Icons.account_circle_outlined),
               ),
@@ -223,9 +270,57 @@ class _ProfileState extends State<Profile> {
               ),
               _buildProfileListTile(
                 context,
-                'job preference',
+                'Job preference',
                 Icon(Icons.workspaces_outline),
               ),
+              if (_role == 'student')
+                _buildProfileListTile(
+                  context,
+                  'College',
+                  Icon(Icons.school_outlined),
+                ),
+              if (_role == 'student')
+                _buildProfileListTile(
+                  context,
+                  'Program',
+                  Icon(Icons.menu_book_outlined),
+                ),
+              if (_role == 'student')
+                _buildProfileListTile(
+                  context,
+                  'Student number',
+                  Icon(Icons.confirmation_number_outlined),
+                ),
+              if (_role == 'recruiter')
+                _buildProfileListTile(
+                  context,
+                  'Company name',
+                  Icon(Icons.business_outlined),
+                ),
+              if (_role == 'recruiter')
+                _buildProfileListTile(
+                  context,
+                  'Company description',
+                  Icon(Icons.description_outlined),
+                ),
+              if (_role == 'recruiter')
+                _buildProfileListTile(
+                  context,
+                  'Company website',
+                  Icon(Icons.language_outlined),
+                ),
+              if (_role == 'recruiter')
+                _buildProfileListTile(
+                  context,
+                  'Company location',
+                  Icon(Icons.location_on_outlined),
+                ),
+              if (_role == 'lecturer')
+                _buildProfileListTile(
+                  context,
+                  'Department',
+                  Icon(Icons.school_outlined),
+                ),
               SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _isUploading ? null : _uploadProfile,
