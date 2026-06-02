@@ -138,27 +138,6 @@ class _LecturerDashboardState extends State<_LecturerDashboard> {
       ),
       body: Column(
         children: [
-          // Verification status banner - only for lecturers
-          if (_profile != null && !_profile!.isVerified)
-            Container(
-              width: double.infinity,
-              color: Colors.orange.shade100,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  const Icon(Icons.pending_outlined,
-                      color: Colors.orange, size: 20),
-                  const SizedBox(width: 8),
-                  const Expanded(
-                    child: Text(
-                      'Your account is pending verification by admin. '
-                      'You can still post jobs.',
-                      style: TextStyle(color: Colors.orange, fontSize: 13),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16),

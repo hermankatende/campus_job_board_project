@@ -97,15 +97,6 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
 
       if (!mounted) return;
 
-      if (_isLecturer) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                'Lecturer profile submitted. Verification email has been sent to the HOD.'),
-          ),
-        );
-      }
-
       if (profile.isStudent) {
         Navigator.pushAndRemoveUntil(
           context,

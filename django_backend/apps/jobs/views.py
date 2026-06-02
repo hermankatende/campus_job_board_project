@@ -81,21 +81,39 @@ class JobListCreateView(generics.ListCreateAPIView):
             from apps.common.fcm import send_fcm_multicast  # noqa: PLC0415
             category = (job.category or "").strip()
             if category:
-                tokens = list(
+                recipients = list(
                     UserProfile.objects.filter(
                         role=UserProfile.Role.STUDENT,
                         notifications_enabled=True,
                     )
                     .exclude(fcm_token="")
-                    .values_list("fcm_token", "subscribed_categories")
+                    .values_list("fcm_token", "subscribed_categories", "job_preference")
                 )
-                # Filter to students who subscribed to this category
-                matched = [
-                    t for t, cats in tokens
-                    if isinstance(cats, list) and any(
-                        c.strip().lower() == category.lower() for c in cats
-                    )
-                ]
+
+                def _matches_category(subscribed_categories, job_preference_value):
+                    normalized = category.lower()
+
+                    if isinstance(subscribed_categories, list):
+                        for item in subscribed_categories:
+                            if str(item).strip().lower() == normalized:
+                                return True
+
+                    if isinstance(job_preference_value, str):
+                        for item in job_preference_value.split(","):
+                            if item.strip().lower() == normalized:
+                                return True
+
+                    return False
+
+                # Filter to students who subscribed to this category.
+                # Falls back to legacy `job_preference` for older accounts.
+                matched = list(
+                    {
+                        token
+                        for token, cats, job_preference in recipients
+                        if _matches_category(cats, job_preference)
+                    }
+                )
                 if matched:
                     send_fcm_multicast(
                         matched,

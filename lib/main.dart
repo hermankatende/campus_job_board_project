@@ -38,6 +38,24 @@ const String _openJobsPayload = 'open_jobs';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    debugPrint('Flutter framework error: ${details.exceptionAsString()}');
+  };
+
+  try {
+    await _bootstrapApp();
+    runApp(MyApp());
+  } catch (error, stackTrace) {
+    debugPrint('App bootstrap failed: $error');
+    debugPrintStack(stackTrace: stackTrace);
+    runApp(AppBootstrapErrorScreen(error: error.toString()));
+  }
+}
+
+Future<void> _bootstrapApp() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
   try {
     await dotenv.load(fileName: ".env");
   } catch (error) {
@@ -71,8 +89,54 @@ Future<void> main() async {
       },
     );
   }
+}
 
-  runApp(MyApp());
+class AppBootstrapErrorScreen extends StatelessWidget {
+  const AppBootstrapErrorScreen({super.key, required this.error});
+
+  final String error;
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Startup configuration error',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'This usually means Firebase is not configured for the current platform (for web, run FlutterFire configuration and regenerate firebase_options.dart).',
+                      style: TextStyle(fontSize: 15),
+                    ),
+                    const SizedBox(height: 16),
+                    SelectableText(
+                      error,
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();

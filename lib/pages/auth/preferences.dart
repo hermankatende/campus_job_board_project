@@ -53,7 +53,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   void _saveSubscriptions() async {
     final selected = selectedCategories.entries
         .where((entry) => entry.value)
-        .map((entry) => entry.key)
+        .map((entry) => entry.key.trim())
+        .where((value) => value.isNotEmpty)
         .toList();
 
     final jobPreference = selected.join(',');
@@ -61,6 +62,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
     await AuthService.instance.updateProfile({
       'job_preference': jobPreference,
+      'subscribed_categories': selected,
       'notifications_enabled': selected.isNotEmpty,
     });
 
