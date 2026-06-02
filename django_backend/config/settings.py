@@ -127,6 +127,13 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CORS_ALLOWED_ORIGINS = _get_list_env("DJANGO_CORS_ALLOWED_ORIGINS", "CORS_ALLOWED_ORIGINS")
 
+# Flutter web dev uses dynamic localhost ports, so allow local browser origins
+# without requiring per-port environment updates.
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^http://localhost(:\d+)?$",
+    r"^http://127\.0\.0\.1(:\d+)?$",
+]
+
 csrf_trusted_origins = _get_list_env("DJANGO_CSRF_TRUSTED_ORIGINS", "CSRF_TRUSTED_ORIGINS")
 if render_hostname:
     render_origin = f"https://{render_hostname}"
