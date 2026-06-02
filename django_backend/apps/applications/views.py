@@ -69,6 +69,7 @@ class ApplicationDetailView(generics.RetrieveUpdateDestroyAPIView):
     def perform_update(self, serializer):
         uid = getattr(self.request, "firebase_user", {}).get("uid")
         application = self.get_object()
+        previous_status = application.status
 
         is_owner = application.applicant.firebase_uid == uid
         is_job_owner = application.job.posted_by.firebase_uid == uid
@@ -93,7 +94,11 @@ class ApplicationDetailView(generics.RetrieveUpdateDestroyAPIView):
         # ── Push notification: alert applicant when their status changes ──
         try:
             new_status = serializer.validated_data.get("status")
-            if new_status and application.applicant.notifications_enabled:
+            if (
+                new_status
+                and new_status != previous_status
+                and application.applicant.notifications_enabled
+            ):
                 token = application.applicant.fcm_token or ""
                 if token.strip():
                     from apps.common.fcm import send_fcm_push  # noqa: PLC0415
@@ -119,6 +124,8 @@ class ApplicationDetailView(generics.RetrieveUpdateDestroyAPIView):
         except Exception as exc:  # noqa: BLE001
             import logging
             logging.getLogger(__name__).warning("Status-change FCM error: %s", exc)
+
+    def perform_destroy(self, instance):
         uid = getattr(self.request, "firebase_user", {}).get("uid")
         is_owner = instance.applicant.firebase_uid == uid
         is_job_owner = instance.job.posted_by.firebase_uid == uid
