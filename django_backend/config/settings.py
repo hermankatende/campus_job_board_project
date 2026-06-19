@@ -7,7 +7,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 def _get_env(name: str, fallback: str | None = None) -> str | None:
-    return os.getenv(name) or (os.getenv(fallback) if fallback else None)
+    raw_value = os.getenv(name)
+    if not raw_value and fallback:
+        raw_value = os.getenv(fallback)
+    if raw_value is None:
+        return None
+
+    value = raw_value.strip()
+    # Render env values are sometimes pasted with wrapping quotes.
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
+        value = value[1:-1].strip()
+    return value or None
+
+
+def _default_db_port(host: str | None) -> str:
+    if host and host.endswith("pooler.supabase.com"):
+        return "6543"
+    return "5432"
 
 
 def _get_bool_env(name: str, fallback: str | None = None, default: bool = False) -> bool:
@@ -80,16 +96,16 @@ ASGI_APPLICATION = "config.asgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": os.getenv("DB_ENGINE", "django.db.backends.postgresql"),
-        "NAME": os.getenv("DB_NAME", "campus_jobs"),
-        "USER": os.getenv("DB_USER", "postgres"),
-        "PASSWORD": os.getenv("DB_PASSWORD", "postgres"),
-        "HOST": os.getenv("DB_HOST", "127.0.0.1"),
-        "PORT": os.getenv("DB_PORT", "5432"),
+        "ENGINE": _get_env("DB_ENGINE") or "django.db.backends.postgresql",
+        "NAME": _get_env("DB_NAME") or "campus_jobs",
+        "USER": _get_env("DB_USER") or "postgres",
+        "PASSWORD": _get_env("DB_PASSWORD") or "postgres",
+        "HOST": _get_env("DB_HOST") or "127.0.0.1",
+        "PORT": _get_env("DB_PORT") or _default_db_port(_get_env("DB_HOST")),
     }
 }
 
-database_url = os.getenv("DATABASE_URL")
+database_url = _get_env("DATABASE_URL")
 if database_url:
     DATABASES["default"] = dj_database_url.parse(database_url, conn_max_age=600)
 else:

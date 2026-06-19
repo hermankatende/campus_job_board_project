@@ -8,6 +8,16 @@ class Command(BaseCommand):
     help = "Run migrations and create or update a deploy-time superuser."
 
     def handle(self, *args, **options):
+        db_host = os.getenv("DB_HOST", "")
+        db_user = os.getenv("DB_USER", "")
+        if db_host.endswith("pooler.supabase.com") and db_user and not db_user.startswith("postgres."):
+            self.stdout.write(
+                self.style.WARNING(
+                    "Supabase pooler detected. DB_USER should usually be in the format "
+                    "'postgres.<project-ref>' for pooled connections."
+                )
+            )
+
         self.stdout.write("Running database migrations...")
         call_command("migrate", interactive=False)
 

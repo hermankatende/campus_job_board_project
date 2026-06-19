@@ -24,7 +24,7 @@ services:
       - key: DB_HOST
         sync: false
       - key: DB_PORT
-        sync: false
+        value: "6543"
       - key: DB_SSLMODE
         value: require
       - key: DJANGO_SECRET_KEY
