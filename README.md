@@ -1,6 +1,7 @@
-# campus_job_board_project
+# Campus Job Board Project
 
 A central platform where:
+
 - **Students** can look for job opportunities
 - **Recruiters** can find potential candidates
 - **Lecturers** can share job opportunities with students
@@ -56,4 +57,3 @@ The Flutter app reads `BACKEND_URL` from the root `.env` file, or from a compile
 - build/run override: `--dart-define=BACKEND_URL=https://campus-job-board-project.onrender.com`
 
 An example app env file is included at `.env.example`.
-
